@@ -181,32 +181,5 @@ def analyze_autocorrelation(self, channel=1, label=""):
 #    plt.tight_layout(rect=[0, 0.03, 1, 0.95])
     plt.show()
 
-    print(lags)
-    min_lag_idx = np.where(lags > 0)[0][0]
-    lags_pos = lags[min_lag_idx:]
-    ac_avg_pos = avg_acorr[min_lag_idx:]
-
-    peaks, _ = find_peaks(ac_avg_pos, height=np.max(ac_avg_pos)*0.2) # can also add distance
-    peak_lags = lags_pos[peaks]  # in seconds
-
-    if len(peak_lags) >= 2:
-        # Compute differences between consecutive peaks
-        period_candidates = np.diff(peak_lags)
-        
-        # Use the smallest difference or median
-        est_period = np.min(period_candidates)
-        
-        # (Optional) Try clustering or histogram to refine
-        print("Autocorr peak lags (ms):", peak_lags[:5]*1e3)
-        print("Period candidates (ms):", period_candidates[:5]*1e3)
-        print(f"Estimated pulsar period: {est_period*1e3:.3f} ms")
-
-        # Plot peaks
-        for lag in peak_lags[:5]:
-            axs[2].plot(lag * 1e3, avg_acorr[min_lag_idx:][peaks][np.where(peak_lags == lag)[0][0]], 'o', color='crimson')
-            axs[2].annotate(f"{lag*1e3:.2f} ms", (lag*1e3, avg_acorr[min_lag_idx:][peaks][np.where(peak_lags == lag)[0][0]]),
-                            textcoords="offset points", xytext=(0, 10), ha='center', color='crimson')
-    else:
-        print("Not enough peaks found to estimate period.")
 
 

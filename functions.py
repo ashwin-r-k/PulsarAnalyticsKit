@@ -69,57 +69,55 @@ def dedisperse(matrix, DM,block_size, avg_blocks , sample_rate , bandwidth_MHZ =
     return dedispersed
 
 
-def sharpness_score(matrix,pulseperiod,t_bin_ms,NPeeks,to_plot):
-    profile = matrix.sum(axis=1)
-    distance = int(pulseperiod / t_bin_ms  * 0.7 )
-    width=( int(pulseperiod / t_bin_ms * 0.1) , int(pulseperiod / t_bin_ms * 0.5 ))
-    print(distance,width)
-    print(len(profile))
-    return -fit_multiple_gaussians(profile,num_peaks = NPeeks ,distance=distance,width=width,to_plot=to_plot)  # Lower sigma → better alignment
-
-def find_best_dm(matrix, center_freq_MHZ,bandwidth_MHZ, sample_rate, block_size, avg_blocks,Npeaks,pulseperiod_ms, to_plot, dm_min=0, dm_max=100, tol=1):
+def find_best_dm(matrix,center_freq_MHZ,bandwidth_MHZ, sample_rate, block_size, avg_blocks,num_peaks,pulseperiod_ms, to_plot,dm_min, dm_max, tol=1):
+    t_bin_ms = (block_size * avg_blocks / sample_rate) * 1e3
 
     def objective(dm):
-        t_bin_ms = (block_size * avg_blocks / sample_rate) * 1e3
-        dedispersed = dedisperse(matrix, dm ,block_size, avg_blocks , sample_rate , center_freq_MHZ, bandwidth_MHZ)
-        score = sharpness_score(dedispersed ,pulseperiod_ms,t_bin_ms, Npeaks,to_plot)
-
+        dedispersed = dedisperse(matrix, dm ,block_size, avg_blocks , sample_rate , bandwidth_MHZ,center_freq_MHZ)
+        score = sharpness_score(dedispersed,num_peaks,pulseperiod_ms,t_bin_ms, to_plot)
         print(f"DM = {dm}  ; score = {score}")
-        #plot_intensity_matrix(dedisperse_matrix(matrix, dm, block_size, avg_blocks , sample_rate), block_size, avg_blocks , sample_rate,gamma=2.5)
-
-        return score
+        return -1*score
 
     result = minimize_scalar(objective, bounds=(dm_min, dm_max), method='bounded', options={'xatol': tol})
-
-    return result.x, -result.fun
+    print(result)
+    return result.x
 
 
 def gaussian(x, a, mu, sigma, c):
     return a * np.exp(-(x - mu)**2 / (2 * sigma**2)) + c
 
-def fit_multiple_gaussians(profile, num_peaks, distance, width,to_plot):
+def fit_multiple_gaussians(profile, num_peaks, distance, width, to_plot=False):
     peaks, _ = find_peaks(profile, distance=distance, width=width)
-    print(width)
+
     peaks = peaks[:num_peaks]
-    sigmas = []
+    snrs = []
 
     if to_plot:
         plt.figure(figsize=(10, 4))
         plt.plot(profile, label='Profile')
-    x_full = np.arange(len(profile))
+
+    width_single_gauss = int(len(profile) / (2 * num_peaks) * 0.7)
 
     for peak in peaks:
+        x = np.arange(peak - width_single_gauss, peak + width_single_gauss)
+        x = x[(x >= 0) & (x < len(profile))]
+        y = profile[x]
         try:
-            x = np.arange(peak - 30, peak + 30)
-            x = x[(x >= 0) & (x < len(profile))]
-            y = profile[x]
-            p0 = [np.max(y), peak, 10, np.median(profile)]
-            popt, _ = curve_fit(gaussian, x, y, p0=p0)
-            sigmas.append(abs(popt[2]))
+            p0 = [np.max(y), peak, width_single_gauss // 3, np.median(profile)]
+            popt, _ = curve_fit(gaussian, x, y, p0=p0, maxfev=10000)
+            amp, mu, sigma, offset = popt
+            # Estimate noise as std of profile excluding the fitted region
+            mask = np.ones(len(profile), dtype=bool)
+            mask[x] = False
+            noise = np.std(profile[mask])
+            snr = amp / sigma if noise > 0 else 0
+            snrs.append(snr)
             if to_plot:
-                plt.plot(x, gaussian(x, *popt), '--', label=f'Gaussian fit (peak {peak})')
+                plt.plot(x, gaussian(x, *popt), '--', label=f'Fit (peak {peak})')
         except Exception as e:
+            print(f"Fit failed at peak {peak}: {e}")
             continue
+
     if to_plot:
         plt.scatter(peaks, profile[peaks], color='red', zorder=5, label='Peaks')
         plt.legend()
@@ -128,6 +126,47 @@ def fit_multiple_gaussians(profile, num_peaks, distance, width,to_plot):
         plt.ylabel('Intensity')
         plt.tight_layout()
         plt.show()
-    return np.mean(sigmas) if sigmas else np.inf
+
+    snrs_clean = [s for s in snrs if s is not None and np.isfinite(s)]
+    
+    if len(snrs_clean) >= max(1, num_peaks * 0): #max(1, num_peaks * 0.3) #ensures at least 1 peak
+        return np.mean(snrs_clean)
+    else:
+        print(f"Warning: Only {len(snrs_clean)} valid fits (expected {num_peaks}).")
+        return 0
+
+def sharpness_score(matrix, num_peaks, pulseperiod_ms, t_bin_ms, to_plot=False):
+    profile = matrix.sum(axis=1)
+    distance = int(pulseperiod_ms / t_bin_ms * 0.7)
+    width = (int(pulseperiod_ms / t_bin_ms * 0.1), int(pulseperiod_ms / t_bin_ms * 0.5))
+    sigma_avg = fit_multiple_gaussians(profile, num_peaks=num_peaks, distance=distance, width=width, to_plot=to_plot)
+    return sigma_avg if sigma_avg is not None else 0
+
+
+def find_best_dm_Grid(matrix, center_freq_MHZ, bandwidth_MHZ, sample_rate, block_size, avg_blocks,
+                       num_peaks, pulseperiod_ms, to_plot, dm_min, dm_max, tol=1):
+    t_bin_ms = (block_size * avg_blocks / sample_rate) * 1e3
+    scores = []
+    
+    for dm in range(dm_min, dm_max, tol):
+        dedispersed = dedisperse(matrix, dm, block_size, avg_blocks, sample_rate, bandwidth_MHZ, center_freq_MHZ)
+        score = sharpness_score(dedispersed, num_peaks, pulseperiod_ms, t_bin_ms, to_plot)
+        if not np.isfinite(score):
+            print(f"Skipping DM = {dm} due to invalid score.")
+            score = 0
+        print(f"DM = {dm} ; score = {score:.4f}")
+        scores.append([dm, score])
+    
+    def plot_dm_curve(dm_values, scores):
+        plt.figure(figsize=(8, 4))
+        plt.plot(dm_values, scores, marker='o')
+        plt.xlabel("Dispersion Measure (pc/cm^3)")
+        plt.ylabel("Sharpness Score")
+        plt.title("DM Search Curve")
+        plt.grid(True)
+        plt.show()
+
+    plot_dm_curve(np.array(scores)[:,0], np.array(scores)[:,1])
+    return scores
 
 
