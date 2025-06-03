@@ -2,12 +2,8 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.colors as colors
 
-
-from scipy.signal import welch, correlate, find_peaks
-from scipy import stats
-from scipy.stats import linregress
+from scipy.signal import  find_peaks
 from scipy.optimize import curve_fit, minimize_scalar
 
 
@@ -68,6 +64,52 @@ def dedisperse(matrix, DM,block_size, avg_blocks , sample_rate , bandwidth_MHZ =
 
     return dedispersed
 
+def dedisperse_pop(matrix, DM,block_size, avg_blocks , sample_rate , bandwidth_MHZ = 16.5,center_freq_MHZ = 326.5):
+
+    """
+    Dedisperse intensity matrix using cold plasma dispersion delay.
+    DM is in pc/cm^3 should be DM=67.8 for vela
+    """
+
+    n_time, n_freq = matrix.shape
+    #print(matrix.shape)
+
+    # # Generate frequency array for each channel
+    bandwidth = bandwidth_MHZ /1000 # MHz to GHz
+    center_freq = center_freq_MHZ / 1000 # MHz to GHz
+
+    freq_array = np.linspace(center_freq - bandwidth / 2, center_freq + bandwidth / 2, n_freq)
+
+
+    # Reference frequency (earliest arrival): highest frequency
+    f_ref = freq_array[len(freq_array)//2]
+
+    # Calculate delay in microseconds for each frequency channel
+    delays_ms = 4.15 * DM * (1 / freq_array**2 - 1 / f_ref**2)  # in ms
+    #delays_s = delays_ms  / 1000  # to Sec
+
+
+    # # Time bin duration (microseconds per row)
+    t_bin =  avg_blocks * block_size / sample_rate * 1000 # in mili Sec
+    #print( "Time bin",t_bin)
+
+    delay_bins = (delays_ms / t_bin).astype(int)
+    
+    # # Initialize dedispersed matrix
+    dedispersed = np.zeros_like(matrix)
+    max = delay_bins[0]
+    min = delay_bins[-1]
+    for i in range(n_freq):
+        shift = delay_bins[i]
+        dedispersed[:, i] = np.roll(matrix[:, i], shift)
+        if shift > 0 :
+            dedispersed[:abs(shift),i] = 0
+        elif shift < 0:
+            dedispersed[shift:,i] = 0
+    # Chop the matrix to remove the leading and trailing zeros
+
+    dedispersed = dedispersed[max:min,:]
+    return dedispersed
 
 def find_best_dm(matrix,center_freq_MHZ,bandwidth_MHZ, sample_rate, block_size, avg_blocks,num_peaks,pulseperiod_ms, to_plot,dm_min, dm_max, tol=1):
     t_bin_ms = (block_size * avg_blocks / sample_rate) * 1e3
@@ -153,45 +195,10 @@ def find_best_dm_Grid(matrix, center_freq_MHZ, bandwidth_MHZ, sample_rate, block
         if not np.isfinite(score):
             print(f"Skipping DM = {dm} due to invalid score.")
             score = 0
-        print(f"DM = {dm} ; score = {score:.4f}")
+        # print(f"DM = {dm} ; score = {score:.4f}")
         scores.append([dm, score])
-        
-    def plot_dm_curve(dm_values, scores):
-        plt.figure(figsize=(8, 4))
-        plt.plot(dm_values, scores, marker='o', label='Sharpness Score')
 
-        # Gaussian fit
-
-        def gauss(x, a, mu, sigma, c):
-            return a * np.exp(-(x - mu) ** 2 / (2 * sigma ** 2)) + c
-
-        try:
-            # Initial guess: amplitude, mean, stddev, offset
-            a0 = np.max(scores) - np.min(scores)
-            mu0 = dm_values[np.argmax(scores)]
-            sigma0 = (dm_values[-1] - dm_values[0]) / 6
-            c0 = np.min(scores)
-            popt, _ = curve_fit(gauss, dm_values, scores, p0=[a0, mu0, sigma0, c0], maxfev=10000)
-            fit_scores = gauss(dm_values, *popt)
-            plt.plot(dm_values, fit_scores, 'r--', label='Gaussian Fit')
-
-            # Mark and print the maxima of the fit
-            dm_max_fit = popt[1]
-            score_max_fit = gauss(dm_max_fit, *popt)
-            plt.axvline(dm_max_fit, color='g', linestyle=':', label=f'Fit Max: {dm_max_fit:.3f}')
-            plt.scatter([dm_max_fit], [score_max_fit], color='g', zorder=5)
-            print(f"Gaussian fit maximum at DM = {dm_max_fit:.5f}, Score = {score_max_fit:.5f}")
-        except Exception as e:
-            print(f"Gaussian fit failed: {e}")
-
-        plt.xlabel("Dispersion Measure (pc/cm^3)")
-        plt.ylabel("Sharpness Score")
-        plt.title("DM Search Curve")
-        plt.grid(True)
-        plt.legend()
-        plt.show()
-
-    plot_dm_curve(np.array(scores)[:,0], np.array(scores)[:,1])
+    
     return scores
 
 

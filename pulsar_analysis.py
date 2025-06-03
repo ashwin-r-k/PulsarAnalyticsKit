@@ -9,6 +9,8 @@ from scipy.stats import linregress
 from scipy.optimize import curve_fit
 
 from functions import *
+# from generic_plotting import *
+
 
 
 # I will have a set of functions which can work independently thne the pulsar class will be used to  
@@ -23,14 +25,16 @@ class pulsar_analysis:
         self.data_type = data_type
 
         self.n_channels = n_channels
-        self.raw_data = None
+        self.raw_data = np.empty( self.n_channels , dtype=object)
         #self.intensity_matrix_ch_s = None
         self.channel_names = channel_names        
         self.block_size = block_size
         self.avg_blocks = avg_blocks
         self.sample_rate = sample_rate  # in Hz
-        self.intensity_matrix_ch_s = np.array([])
-        self.dedispersed_ch_s = np.array([])
+        self.intensity_matrix_ch_s = np.empty( self.n_channels , dtype=object)
+        self.dedispersed_ch_s = np.empty( self.n_channels , dtype=object)
+        self.dedispersed_choped_ch_s = np.empty(self.n_channels, dtype=object)
+        self.folded_ch_s = np.empty(self.n_channels, dtype=object)
         self.center_freq_MHZ = center_freq_MHZ
         self.bandwidth_MHZ = bandwidth_MHZ
         self.pulseperiod_ms = None
@@ -78,7 +82,8 @@ class pulsar_analysis:
                 channel_data, self.block_size, self.avg_blocks, self.sample_rate
             ))
         self.intensity_matrix_ch_s = Intensity_Matrix
-        self.dedispersed_ch_s = np.empty_like(Intensity_Matrix)
+ 
+
 
     def Auto_dedisperse(self,channel,num_peaks,to_plot,dm_min, dm_max,tol = 1):
         matrix = self.intensity_matrix_ch_s[channel]
@@ -98,8 +103,9 @@ class pulsar_analysis:
         if matrix is None:
             raise ValueError("Intensity matrix for the channel is not computed. Please compute intensity matrix first.")
 
-        dm = find_best_dm_Grid(matrix, center_freq_MHZ,bandwidth_MHZ, sample_rate, block_size, avg_blocks,num_peaks,pulseperiod_ms, to_plot, dm_min, dm_max, tol)
-        self.dedispersion_measure = dm
+        scores = find_best_dm_Grid(matrix, center_freq_MHZ,bandwidth_MHZ, sample_rate, block_size, avg_blocks,num_peaks,pulseperiod_ms, to_plot, dm_min, dm_max, tol)
+        return scores
+        # plot_dm_curve(np.array(scores)[:,0], np.array(scores)[:,1])
 
     def Manual_dedisperse(self,DM, channel):
         if channel == "all":
@@ -115,4 +121,18 @@ class pulsar_analysis:
                         , sample_rate=self.sample_rate , bandwidth_MHZ = self.bandwidth_MHZ ,center_freq_MHZ = self.center_freq_MHZ)
             self.dedispersed_ch_s[channel] = dedispersed
             self.dedispersion_measure = DM
+
+    def Manual_dedisperse_pop(self,DM, channel):
+        if channel == "all":
+            for i in range(self.n_channels):
+                matrix = self.intensity_matrix_ch_s[i]
+                dedispersed = dedisperse_pop(matrix, DM,block_size=self.block_size, avg_blocks=self.avg_blocks
+                        , sample_rate=self.sample_rate , bandwidth_MHZ = self.bandwidth_MHZ ,center_freq_MHZ = self.center_freq_MHZ)
+                self.dedispersed_choped_ch_s[i] = dedispersed
+
+        elif isinstance(channel, int):
+            matrix = self.intensity_matrix_ch_s[channel]
+            dedispersed = dedisperse_pop(matrix, DM,block_size=self.block_size, avg_blocks=self.avg_blocks
+                        , sample_rate=self.sample_rate , bandwidth_MHZ = self.bandwidth_MHZ ,center_freq_MHZ = self.center_freq_MHZ)
+            self.dedispersed_ch_s[channel] = dedispersed
         
