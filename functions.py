@@ -144,11 +144,10 @@ def sharpness_score(matrix, num_peaks, pulseperiod_ms, t_bin_ms, to_plot=False):
 
 
 def find_best_dm_Grid(matrix, center_freq_MHZ, bandwidth_MHZ, sample_rate, block_size, avg_blocks,
-                       num_peaks, pulseperiod_ms, to_plot, dm_min, dm_max, tol=1):
+                       num_peaks, pulseperiod_ms, to_plot, dm_min, dm_max, tol):
     t_bin_ms = (block_size * avg_blocks / sample_rate) * 1e3
     scores = []
-    
-    for dm in range(dm_min, dm_max, tol):
+    for dm in np.linspace(dm_min, dm_max, int((abs(dm_max-dm_min) / tol) + 1)):
         dedispersed = dedisperse(matrix, dm, block_size, avg_blocks, sample_rate, bandwidth_MHZ, center_freq_MHZ)
         score = sharpness_score(dedispersed, num_peaks, pulseperiod_ms, t_bin_ms, to_plot)
         if not np.isfinite(score):
@@ -156,14 +155,40 @@ def find_best_dm_Grid(matrix, center_freq_MHZ, bandwidth_MHZ, sample_rate, block
             score = 0
         print(f"DM = {dm} ; score = {score:.4f}")
         scores.append([dm, score])
-    
+        
     def plot_dm_curve(dm_values, scores):
         plt.figure(figsize=(8, 4))
-        plt.plot(dm_values, scores, marker='o')
+        plt.plot(dm_values, scores, marker='o', label='Sharpness Score')
+
+        # Gaussian fit
+
+        def gauss(x, a, mu, sigma, c):
+            return a * np.exp(-(x - mu) ** 2 / (2 * sigma ** 2)) + c
+
+        try:
+            # Initial guess: amplitude, mean, stddev, offset
+            a0 = np.max(scores) - np.min(scores)
+            mu0 = dm_values[np.argmax(scores)]
+            sigma0 = (dm_values[-1] - dm_values[0]) / 6
+            c0 = np.min(scores)
+            popt, _ = curve_fit(gauss, dm_values, scores, p0=[a0, mu0, sigma0, c0], maxfev=10000)
+            fit_scores = gauss(dm_values, *popt)
+            plt.plot(dm_values, fit_scores, 'r--', label='Gaussian Fit')
+
+            # Mark and print the maxima of the fit
+            dm_max_fit = popt[1]
+            score_max_fit = gauss(dm_max_fit, *popt)
+            plt.axvline(dm_max_fit, color='g', linestyle=':', label=f'Fit Max: {dm_max_fit:.3f}')
+            plt.scatter([dm_max_fit], [score_max_fit], color='g', zorder=5)
+            print(f"Gaussian fit maximum at DM = {dm_max_fit:.5f}, Score = {score_max_fit:.5f}")
+        except Exception as e:
+            print(f"Gaussian fit failed: {e}")
+
         plt.xlabel("Dispersion Measure (pc/cm^3)")
         plt.ylabel("Sharpness Score")
         plt.title("DM Search Curve")
         plt.grid(True)
+        plt.legend()
         plt.show()
 
     plot_dm_curve(np.array(scores)[:,0], np.array(scores)[:,1])
