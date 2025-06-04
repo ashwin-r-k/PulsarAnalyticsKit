@@ -195,8 +195,12 @@ def find_best_dm_Grid(matrix, center_freq_MHZ, bandwidth_MHZ, sample_rate, block
             score = 0
         # print(f"DM = {dm} ; score = {score:.4f}")
         scores.append([dm, score])
-
-    
+        
     return scores
 
 
+def anti_line_noise_median(mat):
+    norm = np.median(mat, axis=0)
+    mat = mat / norm
+    mat = mat - np.min(mat, axis=0)
+    return mat

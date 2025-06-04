@@ -20,14 +20,14 @@ from functions import *
 class pulsar_analysis:
     # No import needed; use static methods directly from Fn_1ch, e.g., Fn_1ch.compute_channel_intensity_matrix
 
-    def __init__(self, file_path, data_type=None, channel_names = None,center_freq_MHZ = 326.5,bandwidth_MHZ = 16.5 ,n_channels=2,block_size=512, avg_blocks=60, sample_rate=33e6):
+    def __init__(self, file_path, data_type , channel_names,center_freq_MHZ = 326.5,bandwidth_MHZ = 16.5 ,n_channels=2,block_size=512, avg_blocks=60, sample_rate=33e6):
         self.file_path = file_path
-        self.data_type = data_type
+        self.data_type:str = data_type
 
         self.n_channels = n_channels
         self.raw_data = np.empty( self.n_channels , dtype=object)
         #self.intensity_matrix_ch_s = None
-        self.channel_names = channel_names        
+        self.channel_names:list = channel_names        
         self.block_size = block_size
         self.avg_blocks = avg_blocks
         self.sample_rate = sample_rate  # in Hz
@@ -37,8 +37,8 @@ class pulsar_analysis:
         self.folded_ch_s = np.empty(self.n_channels, dtype=object)
         self.center_freq_MHZ = center_freq_MHZ
         self.bandwidth_MHZ = bandwidth_MHZ
-        self.pulseperiod_ms = None
-        self.dedispersion_measure = None
+        self.pulseperiod_ms:float  
+        self.dedispersion_measure :float
 
         self.load_data()  # Automatically load data upon object creation
         for k, v in vars(self).items():
@@ -78,11 +78,10 @@ class pulsar_analysis:
         
         for i in range(self.n_channels):
             channel_data = self.raw_data[:, i]
-            Intensity_Matrix.append(compute_channel_intensity_matrix(
-                channel_data, self.block_size, self.avg_blocks, self.sample_rate
-            ))
+            Current_matrix = anti_line_noise_median( compute_channel_intensity_matrix(channel_data, self.block_size, self.avg_blocks, self.sample_rate))
+            Intensity_Matrix.append(Current_matrix)
         self.intensity_matrix_ch_s = Intensity_Matrix
- 
+
 
 
     def Auto_dedisperse(self,channel,num_peaks,to_plot,dm_min, dm_max,tol = 1):
