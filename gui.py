@@ -33,6 +33,12 @@
 
 # verify all the requirements are met in requirements.txt
 
+# if you get errors
+# sudo apt install --reinstall libxcb-xinerama0
+# sudo apt install libxcb-xinerama0 libxcb1 libxcb-util1 libx11-xcb1 libxrender1 libxi6 libxext6 libxfixes3
+# sudo apt install qt5-default qtbase5-dev qt5-qmake
+
+
 import subprocess
 import sys
 import os
@@ -65,6 +71,7 @@ def verify_requirements(requirements_path="requirements.txt"):
             print("  ", pkg)
         print("You can install them with:")
         print(f"  pip install -r {requirements_path}")
+        
     else:
         print("All requirements satisfied.")
 
