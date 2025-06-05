@@ -185,8 +185,6 @@ def analyze_autocorrelation(self, channel=1, label=""):
     axs[2].set_ylabel('Autocorrelation')
     axs[2].set_title('Average Autocorrelation (All Frequencies)')
     axs[2].set_yscale('log')
-    axs[2].axvline(avg_period * 1e3, color='red', linestyle='--', 
-        label=f'Avg Period: {avg_period*1e3:.3f} ms')
 
     min_lag_idx = np.where(lags > 0)[0][0]
     peaks, properties = find_peaks(avg_acorr[min_lag_idx:])
@@ -331,3 +329,4 @@ def compare_channels(ch1,ch2, fs, label=""):
     plt.tight_layout()
     # plt.tight_layout(rect=[0, 0.03, 1, 0.95])
     return fig
+

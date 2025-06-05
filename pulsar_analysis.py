@@ -78,9 +78,11 @@ class pulsar_analysis:
         
         for i in range(self.n_channels):
             channel_data = self.raw_data[:, i]
-            Current_matrix = anti_line_noise_median( compute_channel_intensity_matrix(channel_data, self.block_size, self.avg_blocks, self.sample_rate))
+            Current_matrix =  compute_channel_intensity_matrix(channel_data, self.block_size, self.avg_blocks, self.sample_rate)
             Intensity_Matrix.append(Current_matrix)
         self.intensity_matrix_ch_s = Intensity_Matrix
+
+    
 
 
 

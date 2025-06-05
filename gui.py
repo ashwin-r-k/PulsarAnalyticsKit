@@ -90,40 +90,22 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QStackedWidget, QWidget,
 from pulsar_analysis import pulsar_analysis
 from guibase.generic_plotting_gui import *
 from guibase.gui_log import *
+from guibase.utils import *
+
 
 #import pages 
-
 from guibase.LoadDataPage import *
+#Page3
+from guibase.IntensityMatrixPage import *
+from guibase.PulsarPeriod import *
+from guibase.DMSearchPage import *
+from guibase.AboutPage import *
 
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt import NavigationToolbar2QT as NavigationToolbar
-
-
-class PlotWindow(QMainWindow):
-    def __init__(self, fig, parent=None):
-        super().__init__(parent)
-        self.setWindowTitle("Plot Viewer")
-        self.setMinimumSize(800, 600)
-
-        # Central widget and layout
-        central_widget = QWidget(self)
-        layout = QVBoxLayout(central_widget)
-
-        # Canvas and toolbar
-        self.canvas = FigureCanvas(fig)
-        self.toolbar = NavigationToolbar(self.canvas, self)
-
-        layout.addWidget(self.toolbar)
-        layout.addWidget(self.canvas)
-
-        self.setCentralWidget(central_widget)
-        self.canvas.draw()  # Ensure rendering
-
-
-
 
 class ChannelAnalysisPage(QWidget):
     def __init__(self, main_window):
@@ -167,8 +149,6 @@ class ChannelAnalysisPage(QWidget):
         layout.addWidget(self.plot_btn)
 
         self.setLayout(layout)
-    
-
 
     def run_compare(self):
 
@@ -180,12 +160,12 @@ class ChannelAnalysisPage(QWidget):
 
         ch0 = pulsar.raw_data[:n, self.channel1_select.value()]
         ch1 = pulsar.raw_data[:n, self.channel2_select.value()]
-        fs = pulsar.sample_rate
+        fs = pulsar.sample_rate 
 
         # Instead of showing in matplotlib window, capture the figure
         fig = Figure(figsize=(8, 4))
         fig = compare_channels(ch0, ch1, fs, label="Comparison of N and S channels")
-        self.show_plot(fig)
+        show_plot(self,fig)
         run_with_feedback(self.compare_btn,load = False)
 
     def plot_characteristics(self):
@@ -193,13 +173,8 @@ class ChannelAnalysisPage(QWidget):
         pulsar = self.main_window.pulsar
         channel = self.channel_select.value()
         fig = Plot_characterstics(pulsar, channel)
-        self.show_plot(fig)
+        show_plot(self,fig)
         run_with_feedback(self.plot_btn ,load = False)
-
-    def show_plot(self, fig):
-        self.plot_window = PlotWindow(fig)
-        self.plot_window.show()
-
 
     # def show_plot(self, fig):
     #     dialog = PlotWindow(fig, self)
@@ -222,7 +197,6 @@ class MainWindow(QMainWindow):
         # self.stack.addWidget(self.page1)
         # self.stack.addWidget(self.page2)
 
-
         # Create tab widget and add all pages upfront
         self.tabs = QTabWidget()
         self.setCentralWidget(self.tabs)
@@ -230,21 +204,23 @@ class MainWindow(QMainWindow):
         # All pages — added immediately
         self.page1 = LoadDataPage(self)
         self.page2 = ChannelAnalysisPage(self)
-        # self.page3 = CompareChannelsPage(self)
-        # self.page4 = IntensityMatrixPage(self)
-        # self.page5 = DMSearchPage(self)
+        self.page3 = IntensityMatrixPage(self)
+        self.page4 = PulsarPeriodPage(self)
+        self.page5 = DMSearchPage(self)
         # self.page6 = FoldingPage(self)
-        self.page3 = None
-        self.page4 = None
-        self.page5 = None
+        # self.page3 = None
+        #self.page4 = None
+        # self.page5 = None
         self.page6 = None
+        self.page7 = AboutPage(self)
 
         self.tabs.addTab(self.page1, "Load Data")
         self.tabs.addTab(self.page2, "Channel View")
-        self.tabs.addTab(self.page3, "Compare Channels")
-        self.tabs.addTab(self.page4, "Intensity Matrix")
+        self.tabs.addTab(self.page3, "Intensity Matrix")
+        self.tabs.addTab(self.page4, "Pulsar Period")
         self.tabs.addTab(self.page5, "DM Search")
         self.tabs.addTab(self.page6, "Folding")
+        self.tabs.addTab(self.page7, "About")
 
         self.statusBar().showMessage("Load a file to begin.")
 
@@ -258,9 +234,6 @@ class MainWindow(QMainWindow):
         # ---------------------------------------------------
         # self.log_window = LogDialog(self)
         self.log_window.show()
-
-
-
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

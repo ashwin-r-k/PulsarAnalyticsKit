@@ -1,16 +1,13 @@
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QStackedWidget, QWidget, QVBoxLayout, QLabel,
                              QPushButton, QFileDialog, QSpinBox, QDoubleSpinBox, QComboBox, QLineEdit,
-                             QDialog,QHBoxLayout,QTabWidget)
+                             QDialog,QHBoxLayout,QTabWidget,QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QSpinBox,
+                            QDoubleSpinBox, QLineEdit, QFileDialog)
 
 from pulsar_analysis import pulsar_analysis
 from guibase.utils import run_with_feedback
 from guibase.generic_plotting_gui import *
 from guibase.gui_log import *
 
-from PyQt5.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QSpinBox,
-    QDoubleSpinBox, QLineEdit, QFileDialog
-)
 
 class LoadDataPage(QWidget):
     def __init__(self, main_window):
@@ -101,6 +98,8 @@ class LoadDataPage(QWidget):
 
         chans = self.channel_input.value()
         channel_names = [field.text() for field in self.channel_name_inputs]
+        
+        run_with_feedback(self.load_btn, load=True)
 
         self.main_window.pulsar = pulsar_analysis(
             file_path=path,
@@ -109,8 +108,10 @@ class LoadDataPage(QWidget):
             n_channels=chans,
             center_freq_MHZ=self.center_freq_input.value(),
             bandwidth_MHZ=self.bandwidth_input.value(),
-            sample_rate=float(self.sample_rate_input.text()),
+            sample_rate=float(self.sample_rate_input.text()) * 1e6 # Convert GHz to Hz
         )
+
+        run_with_feedback(self.load_btn, load=False)
 
         self.main_window.statusBar().showMessage("Data loaded successfully")
 
