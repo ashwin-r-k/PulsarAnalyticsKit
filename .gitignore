@@ -2,3 +2,7 @@ Data4Analysis/*
 __pycache__
 __pycache__/*
 __pycache__/functions.cpython-310.pyc
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
