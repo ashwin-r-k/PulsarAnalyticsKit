@@ -68,6 +68,6 @@ class LogDialog(QDialog):
 
     def append_ansi_text(self, text):
         html = self.ansi_converter.convert(text, full=False)
-        self.log_output.moveCursor(11)  # QTextCursor.End
+        # self.log_output.moveCursor(11)  # QTextCursor.End
         self.log_output.insertHtml(html.replace('\n', '<br>'))
         self.log_output.moveCursor(self.log_output.textCursor().End)

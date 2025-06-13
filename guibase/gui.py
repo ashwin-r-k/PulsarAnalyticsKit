@@ -48,7 +48,7 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QStackedWidget, QWidget,
                              QDialog,QHBoxLayout,QTabWidget)
 
 
-from pulsar_analysis import pulsar_analysis
+from core.pulsar_analysis import pulsar_analysis
 from guibase.generic_plotting_gui import *
 from guibase.gui_log import *
 from guibase.utils import *
@@ -112,8 +112,7 @@ class ChannelAnalysisPage(QWidget):
         self.setLayout(layout)
 
     def run_compare(self):
-
-        run_with_feedback(self.compare_btn,load = True)
+        run_with_feedback(self.compare_btn, load=True)
 
         pulsar = self.main_window.pulsar
         percent = self.percent_input.value()
@@ -121,13 +120,38 @@ class ChannelAnalysisPage(QWidget):
 
         ch0 = pulsar.raw_data[:n, self.channel1_select.value()]
         ch1 = pulsar.raw_data[:n, self.channel2_select.value()]
-        fs = pulsar.sample_rate 
+        fs = pulsar.sample_rate
 
-        # Instead of showing in matplotlib window, capture the figure
-        fig = Figure(figsize=(8, 4))
-        fig = compare_channels(ch0, ch1, fs, label="Comparison of N and S channels")
-        show_plot(self,fig)
-        run_with_feedback(self.compare_btn,load = False)
+        @run_in_thread(callback=self.on_compare_done)
+        def compute_compare():
+            return compare_channels(ch0, ch1, fs, label="Comparison of N and S channels")
+
+        compute_compare()
+
+    def on_compare_done(self, fig):
+        show_plot(self, fig)
+        run_with_feedback(self.compare_btn, load=False)
+
+
+    # def run_compare(self):
+
+    #     run_with_feedback(self.compare_btn,load = True)
+
+    #     pulsar = self.main_window.pulsar
+    #     percent = self.percent_input.value()
+    #     n = int(pulsar.raw_data.shape[0] * percent / 100)
+
+    #     ch0 = pulsar.raw_data[:n, self.channel1_select.value()]
+    #     ch1 = pulsar.raw_data[:n, self.channel2_select.value()]
+    #     fs = pulsar.sample_rate 
+
+    #     # Instead of showing in matplotlib window, capture the figure
+    #     fig = Figure(figsize=(8, 4))
+
+    #     fig = compare_channels(ch0, ch1, fs, label="Comparison of N and S channels")
+
+    #     show_plot(self,fig)
+    #     run_with_feedback(self.compare_btn,load = False)
 
     def plot_characteristics(self):
         run_with_feedback(self.plot_btn ,load = True)

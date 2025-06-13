@@ -23,7 +23,7 @@ def random_sample_hist(self, max_samples=100000):
         sample = data[idx, i]
         mean, std = np.mean(sample), np.std(sample)
         print(f"{labels[i]} mean = {mean:.3f}, std = {std:.3f}")
-        ax.hist(sample, bins=200, alpha=0.7, label=labels[i], color=('green' if i == 0 else 'orange'))
+        ax.hist(sample, bins=50, alpha=0.7, label=labels[i], color=('green' if i == 0 else 'orange'))
         ax.set_title(f"{labels[i]} Histogram")
         ax.set_xlabel("Amplitude")
         ax.legend()
@@ -53,15 +53,20 @@ def plot_intensity_matrix(self, channel, gamma=2.5, dedispersed=False,choped=Fal
     time_extent_ms = num_segments * time_bin_us / 1000
 
     # Frequency axis
-    bandwidth = self.bandwidth_MHZ #16.5  # MHz
-    center_freq = self.center_freq_MHZ # 326.5  # MHz
+    bandwidth = self.bandwidth_MHZ  # MHz
+    center_freq = self.center_freq_MHZ  # MHz
     freq_array = np.linspace(center_freq + bandwidth / 2, center_freq - bandwidth / 2, n_freq)
 
     plt.figure(figsize=(10, 6))
+    # Step 1: Compute adaptive percentile bounds
+    vmin, vmax = np.percentile(matrix, [50, 99.5])  # adjust [low%, high%] as needed
+    norm = colors.PowerNorm(gamma=2.5, vmin=vmin, vmax=vmax)
+
+
     plt.imshow(matrix.T, aspect='auto', origin='upper', cmap='turbo',
-                norm=colors.PowerNorm(gamma=gamma),
+                norm=norm,
                 extent=(0, time_extent_ms, freq_array[-1], freq_array[0]))
-    plt.colorbar(label="Log Power")
+    plt.colorbar(label="Power")
     plt.xlabel("Time (ms)")
     plt.ylabel("Frequency (MHz)")
     plt.title(f"Dynamic Spectrum (Channel {channel}){title_suffix}")
@@ -82,12 +87,17 @@ def plot_intensity_matrix_single(matrix, block_size,avg_blocks,sample_rate,bandw
     freq_array = np.linspace(center_freq + bandwidth / 2, center_freq - bandwidth / 2, n_freq)
 
     plt.figure(figsize=(10, 6))
+    # Step 1: Compute adaptive percentile bounds
+    vmin, vmax = np.percentile(matrix, [50, 99.5])  # adjust [low%, high%] as needed
+    norm = colors.PowerNorm(gamma=2.5, vmin=vmin, vmax=vmax)
+
     plt.imshow(matrix.T, aspect='auto', origin='upper', cmap='turbo',
-                norm=colors.PowerNorm(gamma=gamma),
+                norm=norm,
                 extent=(0, time_extent_ms, freq_array[-1], freq_array[0]))
-    plt.colorbar(label="Log Power")
+    plt.colorbar(label="Power")
     plt.xlabel("Time (ms)")
     plt.ylabel("Frequency (MHz)")
+    plt.title(f"Dynamic Spectrum")
     yticks = np.linspace(freq_array[0], freq_array[-1], 8)
     plt.yticks(yticks)
     plt.show()
@@ -120,7 +130,7 @@ def Plot_characterstics(self, channel):
     axs[1].legend()
     axs[1].grid(True, which='both')
 
-    axs[2].hist(ch, bins=100, alpha=0.6, label=label, color=color, density=True)
+    axs[2].hist(ch, bins=50, alpha=0.6, label=label, color=color, density=True)
     axs[2].set_xlabel('Voltage (V)')
     axs[2].set_ylabel('Probability Density')
     axs[2].set_title(f'Histogram of Voltage Values ({label})')

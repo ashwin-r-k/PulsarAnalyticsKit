@@ -8,7 +8,7 @@ from scipy import stats
 from scipy.stats import linregress
 from scipy.optimize import curve_fit
 
-from functions import *
+from core.functions import *
 # from generic_plotting import *
 
 
@@ -20,7 +20,7 @@ from functions import *
 class pulsar_analysis:
     # No import needed; use static methods directly from Fn_1ch, e.g., Fn_1ch.compute_channel_intensity_matrix
 
-    def __init__(self, file_path, data_type , channel_names,center_freq_MHZ = 326.5,bandwidth_MHZ = 16.5 ,n_channels=2,block_size=512, avg_blocks=60, sample_rate=33e6):
+    def __init__(self, file_path, data_type , channel_names,center_freq_MHZ = 326.5,bandwidth_MHZ = 16.5,skip_rows=1 ,n_channels=2,block_size=512, avg_blocks=60, sample_rate=33e6):
         self.file_path = file_path
         self.data_type:str = data_type
 
@@ -39,14 +39,15 @@ class pulsar_analysis:
         self.bandwidth_MHZ = bandwidth_MHZ
         self.pulseperiod_ms:float  
         self.dedispersion_measure :float
+        self.skip_rows:int = skip_rows
 
         self.load_data()  # Automatically load data upon object creation
+
         for k, v in vars(self).items():
             if k in ['raw_data', 'intensity_matrix_ch_s', 'dedispersed_ch_s']:
                 print(f"\033[1;34m{k}\033[0m shape :  {v.shape if isinstance(v, np.ndarray) else v}")
             else:
                 print(f"\033[1;31m{k}\033[0m: {v}")
-
 
         if self.channel_names == None or self.n_channels != len(self.channel_names):
             print("No of given channels names and in data didn't match")
@@ -57,18 +58,38 @@ class pulsar_analysis:
         #     self.intensity_matrix_ch_s = np.zeros(self.n_channels)
         #self.intensity_matrix_ch_s = None
 
-
     def load_data(self):
+        
         if self.data_type == 'ascii':
-            self.raw_data = np.loadtxt(self.file_path)
-        elif self.data_type == 'binary':
-            self.raw_data = np.fromfile(self.file_path, dtype=np.int32).reshape(-1, self.n_channels)
-            #self.raw_data = temp_data[~np.isnan(temp_data).any(axis=1)]
-        else:
-            raise ValueError("Unsupported data type. Use 'ascii' or 'binary'.")
+            #also skip first few lines
+            self.raw_data = np.loadtxt(self.file_path, skiprows=self.skip_rows)
+            self.n_channels = self.raw_data.shape[1]
 
+        elif self.data_type == 'binary_int32':
+            self.raw_data = np.fromfile(self.file_path, dtype=np.int32).reshape(-1, self.n_channels)
+
+        elif self.data_type == 'swan':
+            dt = np.dtype([
+                ('header', 'S8'), ('Source', 'S10'),
+                ('Attenuator_1', '>u1'), ('Attenuator_2', '>u1'),
+                ('Attenuator_3', '>u1'), ('Attenuator_4', '>u1'),
+                ('LO', '>u2'), ('FPGA', '>u2'),
+                ('GPS', '>u2'), ('Packet', '>u4'),
+                ('data', '>i1', 1024)
+            ])
+            self.memmap_file = np.memmap(self.file_path, dtype=dt, mode='r')
+            self.data_blocks = self.memmap_file['data']
+
+            reshaped = self.data_blocks.reshape(-1)
+            ch0 = (reshaped[0::2].astype(np.int32))
+            ch1 = (reshaped[1::2].astype(np.int32))
+            self.raw_data = np.stack([ch0, ch1], axis=1)
+            self.n_channels = 2
+        else:
+            raise ValueError("Unsupported data type. Use 'ascii', 'binary_int32' or 'swan'.")        
         print(f"Given Data is of ndim : {self.raw_data.ndim} . shape : {self.raw_data.shape[1]}")
         self.n_channels = self.raw_data.shape[1]
+
 
     def compute_intensity_matrix(self):
         if self.raw_data is None or self.n_channels is None:
@@ -83,12 +104,15 @@ class pulsar_analysis:
         self.intensity_matrix_ch_s = Intensity_Matrix
 
 
-    def RFI_mitigation(self, threshold=3):
+    def RFI_mitigation(self, freq_ch_threshold=1,time_ch_threshold=7,fill_value=0):
         """
         Simple RFI mitigation by clipping values above a threshold.
         """
         for ch in range(self.n_channels):
-            self.intensity_matrix_ch_s[ch] = rfi_remove(self.intensity_matrix_ch_s[ch], threshold=threshold)
+            self.intensity_matrix_ch_s[ch] = remove_rfi_by_std(self.intensity_matrix_ch_s[ch],
+                               chan_sigma_thresh=freq_ch_threshold,
+                               sample_sigma_thresh=time_ch_threshold,
+                               fill_value=fill_value)
     
 
     def Auto_dedisperse(self,channel,num_peaks,to_plot,dm_min, dm_max,tol = 1):

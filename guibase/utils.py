@@ -103,3 +103,50 @@ def show_plot(a,fig):
     window = PlotWindow(fig)
     active_plot_windows.append(window)
     window.show()
+
+# for running functions in a separate thread
+
+from PyQt5.QtCore import QThread, pyqtSignal, QObject
+
+class FunctionRunner(QObject):
+    finished = pyqtSignal(object)
+    error = pyqtSignal(Exception)
+
+    def __init__(self, func, args, kwargs):
+        super().__init__()
+        self.func = func
+        self.args = args
+        self.kwargs = kwargs
+
+    def run(self):
+        try:
+            result = self.func(*self.args, **self.kwargs)
+            self.finished.emit(result)
+        except Exception as e:
+            self.error.emit(e)
+
+def run_in_thread(callback=None, error_callback=None):
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            runner = FunctionRunner(func, args, kwargs)
+            thread = QThread()
+            runner.moveToThread(thread)
+
+            if callback:
+                runner.finished.connect(callback)
+            if error_callback:
+                runner.error.connect(error_callback)
+
+            def clean_up():
+                runner.deleteLater()
+                thread.quit()
+                thread.wait()
+                thread.deleteLater()
+
+            runner.finished.connect(clean_up)
+            runner.error.connect(clean_up)
+
+            thread.started.connect(runner.run)
+            thread.start()
+        return wrapper
+    return decorator

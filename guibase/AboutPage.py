@@ -11,7 +11,7 @@ class AboutPage(QWidget):
 
         # Title
         title_label = QLabel("About Pulsar Analytics")
-        title_label.setAlignment(Qt.AlignCenter)
+        # title_label.setAlignment(Qt.AlignCenter)
         title_label.setStyleSheet("font-size: 20px; font-weight: bold;")
         layout.addWidget(title_label)
 
@@ -22,11 +22,11 @@ class AboutPage(QWidget):
         image_label = QLabel()
         try:
             pixmap = QPixmap("./guibase/profile-img.png")  # Use your image path here
-            pixmap = pixmap.scaled(120, 120, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            # pixmap = pixmap.scaled(120, 120, Qt.KeepAspectRatio, Qt.SmoothTransformation)
             image_label.setPixmap(pixmap)
         except:
             image_label.setText("[No Image]")
-            image_label.setAlignment(Qt.AlignCenter)
+            # image_label.setAlignment(Qt.AlignCenter)
 
         info_layout.addWidget(image_label)
 
@@ -44,7 +44,7 @@ class AboutPage(QWidget):
 
         # Thank you message
         thank_you = QLabel("\nThank you for using Pulsar Analytics!\nThis tool was designed to support advanced pulsar data processing in a modular and accessible format.")
-        thank_you.setAlignment(Qt.AlignCenter)
+        # thank_you.setAlignment(Qt.AlignCenter)
         layout.addWidget(thank_you)
 
         self.setLayout(layout)

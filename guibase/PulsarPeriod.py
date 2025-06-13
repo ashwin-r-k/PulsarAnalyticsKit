@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton, QComboBox
 from matplotlib.figure import Figure
-from pulsar_analysis import pulsar_analysis
+from core.pulsar_analysis import pulsar_analysis
 from guibase.utils import *
 from guibase.generic_plotting_gui import *
 from guibase.gui_log import *

@@ -3,7 +3,7 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QStackedWidget, QWidget,
                              QDialog,QHBoxLayout,QTabWidget,QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QSpinBox,
                             QDoubleSpinBox, QLineEdit, QFileDialog)
 
-from pulsar_analysis import pulsar_analysis
+from core.pulsar_analysis import pulsar_analysis
 from guibase.utils import run_with_feedback
 from guibase.generic_plotting_gui import *
 from guibase.gui_log import *
@@ -19,6 +19,13 @@ class LoadDataPage(QWidget):
         self.file_label = QLabel("No file selected")
         self.select_file_btn = QPushButton("Select Data File")
         self.select_file_btn.clicked.connect(self.select_file)
+            
+        self.skip_rows = QSpinBox()
+        self.skip_rows.setValue(1)
+        self.skip_rows.setMinimum(0)
+        self.skip_rows.setMaximum(50)  # Arbitrary limit for skip rows
+        self.skip_rows.setSingleStep(1)  # Step size for arrows
+
 
         self.channel_input = QSpinBox()
         self.channel_input.setMinimum(1)
@@ -52,6 +59,10 @@ class LoadDataPage(QWidget):
         layout.addWidget(QLabel("Load Pulsar Data"))
         layout.addWidget(self.file_label)
         layout.addWidget(self.select_file_btn)
+
+        layout.addWidget(QLabel("Skip Rows"))
+        layout.addWidget(self.skip_rows)
+
         layout.addWidget(QLabel("Number of Channels"))
         layout.addWidget(self.channel_input)
 
@@ -108,6 +119,7 @@ class LoadDataPage(QWidget):
             n_channels=chans,
             center_freq_MHZ=self.center_freq_input.value(),
             bandwidth_MHZ=self.bandwidth_input.value(),
+            skip_rows=self.skip_rows.value(),
             sample_rate=float(self.sample_rate_input.text()) * 1e6 # Convert GHz to Hz
         )
 
@@ -117,75 +129,87 @@ class LoadDataPage(QWidget):
 
 
 
-class LoadDataPageOld(QWidget):
-    def __init__(self, main_window):
-        super().__init__()
-        self.main_window = main_window
+# class LoadDataPageOld(QWidget):
+#     def __init__(self, main_window):
+#         super().__init__()
+#         self.main_window = main_window
 
-        layout = QVBoxLayout()
+#         layout = QVBoxLayout()
 
-        self.file_label = QLabel("No file selected")
-        self.select_file_btn = QPushButton("Select Data File")
-        self.select_file_btn.clicked.connect(self.select_file)
+#         self.file_label = QLabel("No file selected")
+#         self.select_file_btn = QPushButton("Select Data File")
+#         self.select_file_btn.clicked.connect(self.select_file)
 
-        self.channel_input = QSpinBox()
-        self.channel_input.setMinimum(1)
-        self.channel_input.setValue(2)
+#         self.skip_rows = QSpinBox()
+#         self.skip_rows.setValue(1)
+#         self.skip_rows.setMinimum(0)
+#         self.skip_rows.setMaximum(50)  # Arbitrary limit for skip rows
+#         self.skip_rows.setSingleStep(1)  # Step size for arrows
 
-        self.center_freq_input = QDoubleSpinBox()
-        self.center_freq_input.setValue(326.5)
 
-        self.bandwidth_input = QDoubleSpinBox()
-        self.bandwidth_input.setValue(16.5)
+#         self.channel_input = QSpinBox()
+#         self.channel_input.setMinimum(1)
+#         self.channel_input.setValue(2)
 
-        self.sample_rate_input = QLineEdit("33")
+#         self.center_freq_input = QDoubleSpinBox()
+#         self.center_freq_input.setValue(326.5)
 
-        self.load_btn = QPushButton("Load Data and Go to Next Page")
-        self.load_btn.clicked.connect(self.load_data)
+#         self.bandwidth_input = QDoubleSpinBox()
+#         self.bandwidth_input.setValue(16.5)
 
-        layout.addWidget(QLabel("Load Pulsar Data"))
-        layout.addWidget(self.file_label)
-        layout.addWidget(self.select_file_btn)
-        layout.addWidget(QLabel("Number of Channels"))
-        layout.addWidget(self.channel_input)
-        layout.addWidget(QLabel("Center Frequency (MHz)"))
-        layout.addWidget(self.center_freq_input)
-        layout.addWidget(QLabel("Bandwidth (MHz)"))
-        layout.addWidget(self.bandwidth_input)
-        layout.addWidget(QLabel("Sample Rate (GHz)"))
-        layout.addWidget(self.sample_rate_input)
-        layout.addWidget(self.load_btn)
-        self.setLayout(layout)
+#         self.sample_rate_input = QLineEdit("33")
 
-    def select_file(self):
-        file_path, _ = QFileDialog.getOpenFileName(self, "Select Data File")
-        if file_path:
-            self.file_label.setText(file_path)
-            self.main_window.data_file_path = file_path
+#         self.load_btn = QPushButton("Load Data and Go to Next Page")
+#         self.load_btn.clicked.connect(self.load_data)
 
-    def load_data(self):
-        path = self.main_window.data_file_path
-        chans = self.channel_input.value()
-        center = self.center_freq_input.value()
-        bw = self.bandwidth_input.value()
-        sample_rate = float(self.sample_rate_input.text())
+#         layout.addWidget(QLabel("Load Pulsar Data"))
+#         layout.addWidget(self.file_label)
+#         layout.addWidget(self.select_file_btn)
 
-        if not path:
-            QMessageBox.critical(self, "Error", "No file selected.")
-            return
+#         layout.addWidget(QLabel("Skip Rows"))
+#         layout.addWidget(self.skip_rows)
 
-        run_with_feedback(self.load_btn,load = True)
+#         layout.addWidget(QLabel("Number of Channels"))
+#         layout.addWidget(self.channel_input)
 
-        self.main_window.pulsar = pulsar_analysis(
-            file_path=path,
-            data_type='ascii',  # or detect automatically
-            channel_names=[f"ch{i}" for i in range(chans)],
-            n_channels=chans,
-            center_freq_MHZ=center,
-            bandwidth_MHZ=bw,
-            sample_rate=sample_rate,
-        )
+#         layout.addWidget(QLabel("Center Frequency (MHz)"))
+#         layout.addWidget(self.center_freq_input)
+#         layout.addWidget(QLabel("Bandwidth (MHz)"))
+#         layout.addWidget(self.bandwidth_input)
+#         layout.addWidget(QLabel("Sample Rate (GHz)"))
+#         layout.addWidget(self.sample_rate_input)
+#         layout.addWidget(self.load_btn)
+#         self.setLayout(layout)
 
-        run_with_feedback(self.load_btn,load = False)
+#     def select_file(self):
+#         file_path, _ = QFileDialog.getOpenFileName(self, "Select Data File")
+#         if file_path:
+#             self.file_label.setText(file_path)
+#             self.main_window.data_file_path = file_path
 
-        # self.main_window.stack.setCurrentIndex(1)  # Go to next page
+#     def load_data(self):
+#         path = self.main_window.data_file_path
+#         chans = self.channel_input.value()
+#         center = self.center_freq_input.value()
+#         bw = self.bandwidth_input.value()
+#         sample_rate = float(self.sample_rate_input.text())
+
+#         if not path:
+#             QMessageBox.critical(self, "Error", "No file selected.")
+#             return
+
+#         run_with_feedback(self.load_btn,load = True)
+
+#         self.main_window.pulsar = pulsar_analysis(
+#             file_path=path,
+#             data_type='ascii',  # or detect automatically
+#             channel_names=[f"ch{i}" for i in range(chans)],
+#             n_channels=chans,
+#             center_freq_MHZ=center,
+#             bandwidth_MHZ=bw,
+#             sample_rate=sample_rate,
+#         )
+
+#         run_with_feedback(self.load_btn,load = False)
+
+#         # self.main_window.stack.setCurrentIndex(1)  # Go to next page

@@ -33,6 +33,7 @@ def random_sample_hist(self, max_samples=100000):
     plt.tight_layout(rect=(0, 0.03, 1, 0.95))
     return fig
 
+
 def plot_intensity_matrix(self, channel, gamma=2.5, dedispersed=False,choped=False):
     try:
         if dedispersed:
@@ -53,20 +54,26 @@ def plot_intensity_matrix(self, channel, gamma=2.5, dedispersed=False,choped=Fal
     time_extent_ms = num_segments * time_bin_us / 1000
 
     # Frequency axis
-    bandwidth = self.bandwidth_MHZ #16.5  # MHz
-    center_freq = self.center_freq_MHZ # 326.5  # MHz
+    bandwidth = self.bandwidth_MHZ  # MHz
+    center_freq = self.center_freq_MHZ  # MHz
     freq_array = np.linspace(center_freq + bandwidth / 2, center_freq - bandwidth / 2, n_freq)
 
     fig = plt.figure(figsize=(10, 6))
+    # Step 1: Compute adaptive percentile bounds
+    vmin, vmax = np.percentile(matrix, [50, 99.5])  # adjust [low%, high%] as needed
+    norm = colors.PowerNorm(gamma=2.5, vmin=vmin, vmax=vmax)
+
+
     plt.imshow(matrix.T, aspect='auto', origin='upper', cmap='turbo',
-                norm=colors.PowerNorm(gamma=gamma),
+                norm=norm,
                 extent=(0, time_extent_ms, freq_array[-1], freq_array[0]))
-    plt.colorbar(label="Log Power")
+    plt.colorbar(label="Power")
     plt.xlabel("Time (ms)")
     plt.ylabel("Frequency (MHz)")
     plt.title(f"Dynamic Spectrum (Channel {channel}){title_suffix}")
     yticks = np.linspace(freq_array[0], freq_array[-1], 8)
     plt.yticks(yticks)
+    # plt.show()
     return fig
 
 
@@ -82,15 +89,79 @@ def plot_intensity_matrix_single(matrix, block_size,avg_blocks,sample_rate,bandw
     freq_array = np.linspace(center_freq + bandwidth / 2, center_freq - bandwidth / 2, n_freq)
 
     fig = plt.figure(figsize=(10, 6))
+    # Step 1: Compute adaptive percentile bounds
+    vmin, vmax = np.percentile(matrix, [50, 99.5])  # adjust [low%, high%] as needed
+    norm = colors.PowerNorm(gamma=2.5, vmin=vmin, vmax=vmax)
+
     plt.imshow(matrix.T, aspect='auto', origin='upper', cmap='turbo',
-                norm=colors.PowerNorm(gamma=gamma),
+                norm=norm,
                 extent=(0, time_extent_ms, freq_array[-1], freq_array[0]))
-    plt.colorbar(label="Log Power")
+    plt.colorbar(label="Power")
     plt.xlabel("Time (ms)")
     plt.ylabel("Frequency (MHz)")
+    plt.title(f"Dynamic Spectrum")
     yticks = np.linspace(freq_array[0], freq_array[-1], 8)
     plt.yticks(yticks)
     return fig
+
+# def plot_intensity_matrix(self, channel, gamma=2.5, dedispersed=False,choped=False):
+#     try:
+#         if dedispersed:
+#             if choped:
+#                 matrix = self.dedispersed_choped_ch_s[channel]
+#                 title_suffix = " (Dedispersed and Choped)"
+#             else:
+#                 matrix = self.dedispersed_ch_s[channel]
+#                 title_suffix = " (Dedispersed)"
+#         else:
+#             matrix = self.intensity_matrix_ch_s[channel]
+#             title_suffix = ""
+#     except:
+#         raise ValueError("Requested intensity / Desispersed matrix not computed.")
+
+#     num_segments, n_freq = matrix.shape
+#     time_bin_us = (self.block_size * self.avg_blocks / self.sample_rate) * 1e6
+#     time_extent_ms = num_segments * time_bin_us / 1000
+
+#     # Frequency axis
+#     bandwidth = self.bandwidth_MHZ #16.5  # MHz
+#     center_freq = self.center_freq_MHZ # 326.5  # MHz
+#     freq_array = np.linspace(center_freq + bandwidth / 2, center_freq - bandwidth / 2, n_freq)
+
+#     fig = plt.figure(figsize=(10, 6))
+#     plt.imshow(matrix.T, aspect='auto', origin='upper', cmap='turbo',
+#                 norm=colors.PowerNorm(gamma=gamma),
+#                 extent=(0, time_extent_ms, freq_array[-1], freq_array[0]))
+#     plt.colorbar(label="Log Power")
+#     plt.xlabel("Time (ms)")
+#     plt.ylabel("Frequency (MHz)")
+#     plt.title(f"Dynamic Spectrum (Channel {channel}){title_suffix}")
+#     yticks = np.linspace(freq_array[0], freq_array[-1], 8)
+#     plt.yticks(yticks)
+#     return fig
+
+
+# def plot_intensity_matrix_single(matrix, block_size,avg_blocks,sample_rate,bandwidth_MHZ,center_freq_MHZ,gamma=2.5):
+
+#     num_segments, n_freq = matrix.shape
+#     time_bin_us = (block_size * avg_blocks / sample_rate) * 1e6
+#     time_extent_ms = num_segments * time_bin_us / 1000
+
+#     # Frequency axis
+#     bandwidth = bandwidth_MHZ #16.5  # MHz
+#     center_freq = center_freq_MHZ # 326.5  # MHz
+#     freq_array = np.linspace(center_freq + bandwidth / 2, center_freq - bandwidth / 2, n_freq)
+
+#     fig = plt.figure(figsize=(10, 6))
+#     plt.imshow(matrix.T, aspect='auto', origin='upper', cmap='turbo',
+#                 norm=colors.PowerNorm(gamma=gamma),
+#                 extent=(0, time_extent_ms, freq_array[-1], freq_array[0]))
+#     plt.colorbar(label="Log Power")
+#     plt.xlabel("Time (ms)")
+#     plt.ylabel("Frequency (MHz)")
+#     yticks = np.linspace(freq_array[0], freq_array[-1], 8)
+#     plt.yticks(yticks)
+#     return fig
 
 
 def Plot_characterstics(self, channel):
