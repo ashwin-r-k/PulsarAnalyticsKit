@@ -82,9 +82,14 @@ class pulsar_analysis:
             Intensity_Matrix.append(Current_matrix)
         self.intensity_matrix_ch_s = Intensity_Matrix
 
+
+    def RFI_mitigation(self, threshold=3):
+        """
+        Simple RFI mitigation by clipping values above a threshold.
+        """
+        for ch in range(self.n_channels):
+            self.intensity_matrix_ch_s[ch] = rfi_remove(self.intensity_matrix_ch_s[ch], threshold=threshold)
     
-
-
 
     def Auto_dedisperse(self,channel,num_peaks,to_plot,dm_min, dm_max,tol = 1):
         matrix = self.intensity_matrix_ch_s[channel]

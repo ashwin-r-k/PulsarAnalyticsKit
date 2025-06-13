@@ -16,6 +16,29 @@ def compute_channel_intensity_matrix(channel_data,block_size, avg_blocks, sample
     power_avg = power_spectra.reshape(num_segments, avg_blocks, -1).mean(axis=1)
     return power_avg
 
+def rfi_remove(matrix, threshold=3):
+    """
+    Remove RFI from the matrix by thresholding.
+    Values above the threshold are set to zero.
+    """
+    # def anti_line_noise_median(mat):
+    #     norm = np.median(mat, axis=0)
+    #     mat = mat / norm
+    #     mat = mat - np.min(mat, axis=0)
+    #     return mat
+
+    # matrix = anti_line_noise_median(matrix)
+
+    mean = np.mean(matrix)
+    std = np.std(matrix)
+
+    rfi_mask = (matrix.mean(axis=0) > mean + threshold * std) | (matrix.mean(axis=0) < mean - threshold * std)
+    print(f"RFI mask: {rfi_mask}")
+    matrix[:,rfi_mask] = 0
+    return matrix
+
+
+
 # computing De dispersion
 
 def dedisperse(matrix, DM,block_size, avg_blocks , sample_rate , bandwidth_MHZ = 16.5,center_freq_MHZ = 326.5):

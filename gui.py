@@ -39,48 +39,9 @@
 # sudo apt install qt5-default qtbase5-dev qt5-qmake
 
 
-import subprocess
-import sys
-import os
 
-os.environ['QT_QPA_PLATFORM'] = 'xcb'
-
-
-def verify_requirements(requirements_path="requirements.txt"):
-    """
-    Checks if all packages in requirements.txt are installed.
-    Prints missing packages.
-    """
-    if not os.path.exists(requirements_path):
-        print(f"Requirements file '{requirements_path}' not found.")
-        return
-
-    with open(requirements_path, "r") as f:
-        requirements = [line.strip() for line in f if line.strip() and not line.startswith("#")]
-
-    missing = []
-    for req in requirements:
-        try:
-            subprocess.check_call([sys.executable, "-m", "pip", "show", req.split("==")[0]], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        except subprocess.CalledProcessError:
-            missing.append(req)
-
-    if missing:
-        print("Missing packages:")
-        for pkg in missing:
-            print("  ", pkg)
-        print("You can install them with:")
-        print(f"  pip install -r {requirements_path}")
-        
-    else:
-        print("All requirements satisfied.")
-
-# Optionally run check at startup
-verify_requirements()
-
-
-
-
+# # Optionally run check at startup
+# verify_requirements()
 
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QStackedWidget, QWidget, QVBoxLayout, QLabel,
                              QPushButton, QFileDialog, QSpinBox, QDoubleSpinBox, QComboBox, QLineEdit,
@@ -222,21 +183,20 @@ class MainWindow(QMainWindow):
         self.tabs.addTab(self.page6, "Folding")
         self.tabs.addTab(self.page7, "About")
 
-        self.statusBar().showMessage("Load a file to begin.")
-
+        self.statusBar().showMessage("Load a file to begin.") # type: ignore
         self.resize(400, 500)
     
         self.log_window = LogDialog(self)  # No 'self'
         # remove always on top flag from the log window
-        self.log_window.setWindowFlags(self.log_window.windowFlags() & ~Qt.WindowStaysOnTopHint)
+        # self.log_window.setWindowFlags(self.log_window.windowFlags() & ~Qt.WindowStaysOnTopHint)
         self.log_window.setWindowTitle("Application Log")
 
         # ---------------------------------------------------
         # self.log_window = LogDialog(self)
         self.log_window.show()
 
-if __name__ == '__main__':
-    app = QApplication(sys.argv)
-    window = MainWindow()
-    window.show()
-    sys.exit(app.exec_())
+# if __name__ == '__main__':
+#     app = QApplication(sys.argv)
+#     window = MainWindow()
+#     window.show()
+#     sys.exit(app.exec_())
