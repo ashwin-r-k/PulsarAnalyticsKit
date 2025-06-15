@@ -24,6 +24,37 @@
 <h2 data-line="15" class="code-line" dir="auto" id="to-build-the-standalone-package">To build the standalone package</h2>
 <p data-line="16" class="code-line" dir="auto">pip install pyinstaller
 pyinstaller --noconfirm --windowed --icon=./guibase/logo.ico main.py</p>
+<p data-line="19" class="code-line" dir="auto">pyinstaller --noconfirm --clean ./mainbuild.spec</p>
+<p data-line="21" class="code-line" dir="auto">mkdir -p AppDir/usr/bin
+cp dist/PulsarAnalyticsKit-${{ env.VERSION }}-linux AppDir/usr/bin/PulsarAnalyticsKit
+chmod +x AppDir/usr/bin/PulsarAnalyticsKit
+mkdir -p AppDir/usr/share/icons/hicolor/256x256/apps
+cp ./guibase/logo.png AppDir/usr/share/icons/hicolor/256x256/apps/pulsar.png
+mkdir -p AppDir/usr/share/applications</p>
+<p data-line="28" class="code-line" dir="auto">echo &quot;[Desktop Entry]
+Version=1.0
+X-AppVersion=${{ env.VERSION }}
+Name=Pulsar Analytics Kit
+Exec=PulsarAnalyticsKit
+Icon=pulsar
+Type=Application
+Categories=Science;Education;&quot; &gt; AppDir/usr/share/applications/pulsar.desktop</p>
+<p data-line="37" class="code-line" dir="auto">ln -s AppDir/usr/share/applications/pulsar.desktop AppDir/pulsar.desktop
+ln -s AppDir/usr/share/icons/hicolor/256x256/apps/pulsar.png / AppDir/pulsar.png
+chmod 644 AppDir/usr/share/applications/pulsar.desktop</p>
+<p data-line="41" class="code-line" dir="auto">ls -la
+echo &quot;Building AppImage LinuxDeploy...&quot;</p>
+<p data-line="44" class="code-line" dir="auto">wget <a href="https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage" data-href="https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage">https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage</a>
+chmod +x linuxdeploy-x86_64.AppImage
+mv linuxdeploy-x86_64.AppImage linuxdeploy</p>
+<p data-line="50" class="code-line" dir="auto">./linuxdeploy-x86_64.AppImage -v1 <br>
+--appdir AppDir <br>
+--output appimage <br>
+--executable app <br>
+--desktop-file AppDir/pulsar.desktop <br>
+--icon-file AppDir/pulsar.png</p>
+<p data-line="57" class="code-line" dir="auto">chmod +x appimagetool</p>
+<p data-line="59" class="code-line" dir="auto">./appimagetool AppDir &quot;PulsarAnalyticsKit-${{ env.VERSION }}.AppImage&quot;</p>
 
 </body>
 </html>

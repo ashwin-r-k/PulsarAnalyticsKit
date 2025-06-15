@@ -10,35 +10,35 @@ import os
 import platform
 from PyQt5.QtWidgets import QApplication, QMessageBox
 # Set up QApplication early for dialogs
-app2 = QApplication(sys.argv)
+# app2 = QApplication(sys.argv)
 
-# Ask user if they want to check for updates
-reply = QMessageBox.question(
-    None,
-    "Check for Updates",
-    "Do you want to check for updates before starting?",
-    QMessageBox.Yes | QMessageBox.No,
-    QMessageBox.No
-)
+# # Ask user if they want to check for updates
+# reply = QMessageBox.question(
+#     None,
+#     "Check for Updates",
+#     "Do you want to check for updates before starting?",
+#     QMessageBox.Yes | QMessageBox.No,
+#     QMessageBox.No
+# )
 
-updated = False
+# updated = False
 
 # If the user chooses to check for updates, run the auto_update function
 
-if reply == QMessageBox.Yes:
-    updated = auto_update_gui(app2)
-else:
-    updated = False
+# if reply == QMessageBox.Yes:
+#     updated = auto_update_gui(app2)
+# else:
+#     updated = False
 
 if platform.system() == "Windows":
     os.environ['QT_QPA_PLATFORM'] = 'windows'  # Often not needed on Windows
-    QMessageBox.information(None, "Windows Platform Detected", "Running on Windows platform.")
+    # QMessageBox.information(None, "Windows Platform Detected", "Running on Windows platform.")
 elif platform.system() == "Linux":
     os.environ['QT_QPA_PLATFORM'] = 'xcb'
-    QMessageBox.information(None, "Linux Platform Detected", "Running on Linux with xcb platform.")
+    # QMessageBox.information(None, "Linux Platform Detected", "Running on Linux with xcb platform.")
 else:
     print("Unsupported platform. Defaulting to offscreen.")
-    QMessageBox.information(None, "Unsupported Platform", "This application is not supported on your platform. Defaulting to offscreen mode.")
+    # QMessageBox.information(None, "Unsupported Platform", "This application is not supported on your platform. Defaulting to offscreen mode.")
     os.environ['QT_QPA_PLATFORM'] = 'offscreen'  # Fallback option
 
 
@@ -77,17 +77,18 @@ def verify_requirements(requirements_path="requirements.txt"):
 
 
 # Optionally run check at startup
-verify_requirements()
+# verify_requirements()
 
-if updated:
-    # import sys
-    # from PyQt5.QtWidgets import QMessageBox, QApplication
-    # app = QApplication(sys.argv)
-    QMessageBox.information(None, "Update Complete", "The application has been updated. Please restart it.")
-    sys.exit(0)
+# if updated:
+#     # import sys
+#     # from PyQt5.QtWidgets import QMessageBox, QApplication
+#     # app = QApplication(sys.argv)
+#     QMessageBox.information(None, "Update Complete", "The application has been updated. Please restart it.")
+#     sys.exit(0)
 
 
 if __name__ == '__main__':
+    print("Starting GUI application...")
     app = QApplication(sys.argv)
     window = MainWindow()
     window.show()
