@@ -2,7 +2,7 @@
 
 # Start GUI only if not updated
 from guibase.gui import *
-from guibase.updater import auto_update
+from guibase.updater import auto_update_gui
 
 import subprocess
 import sys
@@ -22,12 +22,13 @@ reply = QMessageBox.question(
 )
 
 updated = False
+
 # If the user chooses to check for updates, run the auto_update function
 
-# if reply == QMessageBox.Yes:
-#     updated = auto_update()
-# else:
-#     updated = False
+if reply == QMessageBox.Yes:
+    updated = auto_update_gui(app2)
+else:
+    updated = False
 
 if platform.system() == "Windows":
     os.environ['QT_QPA_PLATFORM'] = 'windows'  # Often not needed on Windows
