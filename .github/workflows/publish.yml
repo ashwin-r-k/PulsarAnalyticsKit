@@ -42,11 +42,9 @@ jobs:
       - name: Build executable (Windows or Linux)
         run: |
           if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
-            pyinstaller --onefile --icon=./guibase/logo.ico main.py
-            mv dist/main dist/PulsarAnalyticsKit-${VERSION}.AppImage
+            pyinstaller --noconfirm --clean ./mainbuild.spec
           else
-            pyinstaller --onefile --icon=./guibase/logo.ico main.py
-            mv dist/main.exe dist/PulsarAnalyticsKit-${VERSION}.exe
+            pyinstaller --noconfirm --clean ./mainbuild.spec
           fi
         shell: bash
 
