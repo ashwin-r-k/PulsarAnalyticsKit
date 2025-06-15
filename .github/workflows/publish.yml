@@ -3,6 +3,10 @@ on:
     branches:
       - main
 
+permissions:
+  contents: write
+
+
 jobs:
   build-and-release:
     if: startsWith(github.event.head_commit.message, 'publish:')
@@ -72,7 +76,6 @@ jobs:
           cp AppDir/usr/share/icons/hicolor/256x256/apps/pulsar.png AppDir/pulsar.png
           chmod 644 AppDir/usr/share/applications/pulsar.desktop
 
-          ls -la
           echo "Building AppImage LinuxDeploy..."
           
           ./linuxdeploy -v1 \
@@ -84,6 +87,17 @@ jobs:
 
           chmod +x appimagetool
           ./appimagetool AppDir "PulsarAnalyticsKit-${{ env.VERSION }}.AppImage"
+          
+
+      - name: Debug version value
+        run: | 
+          echo "VERSION is $VERSION"
+          echo ${{ env.VERSION }}
+          ls
+          ls dist
+        env:
+          VERSION: ${{ env.VERSION }}
+
 
       - name: Upload Release
         uses: softprops/action-gh-release@v2
