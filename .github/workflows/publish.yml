@@ -37,7 +37,7 @@ jobs:
           sudo apt-get install -y libfuse2
           wget https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
           chmod +x appimagetool-x86_64.AppImage
-          mv appimagetool-x86_64.AppImage /usr/local/bin/appimagetool
+          mv appimagetool-x86_64.AppImage appimagetool
 
       - name: Build executable
         run: |
@@ -62,6 +62,10 @@ jobs:
           Type=Application
           Categories=Science;Education;" > AppDir/usr/share/applications/pulsar.desktop
 
+          ls -la
+          echo "Building AppImage..."
+
+          chmod +x appimagetool
           ./appimagetool AppDir "PulsarAnalyticsKit-${{ env.VERSION }}.AppImage"
 
       - name: Upload Release
