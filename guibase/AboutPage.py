@@ -21,8 +21,8 @@ class AboutPage(QWidget):
         # Optional Image (replace with your image path)
         image_label = QLabel()
         try:
-            pixmap = QPixmap("./guibase/profile-img.png")  # Use your image path here
-            # pixmap = pixmap.scaled(120, 120, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            pixmap = QPixmap("./guibase/profile.png")  # Use your image path here
+            pixmap = pixmap.scaled(120, 120)
             image_label.setPixmap(pixmap)
         except:
             image_label.setText("[No Image]")

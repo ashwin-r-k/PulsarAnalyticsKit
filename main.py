@@ -18,13 +18,16 @@ reply = QMessageBox.question(
     "Check for Updates",
     "Do you want to check for updates before starting?",
     QMessageBox.Yes | QMessageBox.No,
-    QMessageBox.Yes
+    QMessageBox.No
 )
 
-if reply == QMessageBox.Yes:
-    updated = auto_update()
-else:
-    updated = False
+updated = False
+# If the user chooses to check for updates, run the auto_update function
+
+# if reply == QMessageBox.Yes:
+#     updated = auto_update()
+# else:
+#     updated = False
 
 if platform.system() == "Windows":
     os.environ['QT_QPA_PLATFORM'] = 'windows'  # Often not needed on Windows

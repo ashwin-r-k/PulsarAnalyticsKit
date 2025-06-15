@@ -18,14 +18,16 @@ def compute_channel_intensity_matrix(channel_data,block_size, avg_blocks, sample
     return power_avg
 
 def remove_rfi_by_std(matrix, 
-                      chan_sigma_thresh=1.0, 
+                      chan_sigma_thresh=1.0,
+                      chan_mean_thresh = 3.0,
                       sample_sigma_thresh=7.0, 
                       fill_value=None):
     """
     Remove RFI from a dynamic spectrum using standard‐deviation statistics.
     
     1) Flag & fill entire channels whose std(T) deviates > chan_sigma_thresh × σ_of_channel_stds.
-    2) In remaining channels, clip individual samples > mean ± sample_sigma_thresh × σ, 
+    2)Also checking for mean of the channel it its to high then only consedering it as a RFI channel.
+    3) In remaining channels, clip individual samples > mean ± sample_sigma_thresh × σ, 
        replacing them with fill_value (default = channel median).
     
     Parameters
@@ -57,10 +59,15 @@ def remove_rfi_by_std(matrix,
     bad_ch_high = np.abs(chan_stds - median_std) > chan_sigma_thresh * std_of_stds
     bad_ch_low = np.abs(chan_stds - median_std) < -1*chan_sigma_thresh * std_of_stds
     bad_ch = bad_ch_high
+
+    mean = np.mean(matrix)
+    std = np.std(matrix)
+    rfi_mask = (matrix.mean(axis=0) > mean + chan_mean_thresh * std)
     
     for i in range(n_freq):
         if bad_ch_high[i] | bad_ch_low[i]:
             bad_ch[i] = bad_ch_high[i] | bad_ch_low[i]
+            bad_ch[i] = bad_ch[i] & rfi_mask[i]
     
     if bad_ch.any():
         print(f"Flagging {bad_ch.sum()} channels as RFI heavy")
@@ -94,57 +101,8 @@ def remove_rfi_by_std(matrix,
             else:
                 col[mask] = fill_value
             clean[:, j] = col
-
     return clean
 
-def remove_rfi_sigma_clip(matrix, sigma=3, axis=0, masked=False):
-    """
-    Apply sigma clipping to remove RFI from the dynamic spectrum.
-
-    Parameters:
-        matrix : 2D np.array
-            The dynamic spectrum (time x frequency).
-        sigma : float
-            Sigma threshold for clipping.
-        axis : int
-            Axis along which to apply clipping (0=time, 1=freq).
-        masked : bool
-            If True, returns a masked array. Else, fills outliers with mean.
-
-    Returns:
-        clipped_matrix : np.array or np.ma.MaskedArray
-    """
-    clipped = sigma_clip(matrix, sigma=sigma, axis=axis, masked=masked)
-    
-    if masked:
-        return clipped
-    else:
-        nan_mask = np.isnan(matrix)
-        matrix[nan_mask] = np.nanmean(matrix)
-        # Replace outliers with NaN
-        return matrix
-
-
-def rfi_remove(matrix, threshold=3):
-    """
-    Remove RFI from the matrix by thresholding.
-    Values above the threshold are set to zero.
-    """
-    # def anti_line_noise_median(mat):
-    #     norm = np.median(mat, axis=0)
-    #     mat = mat / norm
-    #     mat = mat - np.min(mat, axis=0)
-    #     return mat
-
-    # matrix = anti_line_noise_median(matrix)
-
-    mean = np.mean(matrix)
-    std = np.std(matrix)
-
-    rfi_mask = (matrix.mean(axis=0) > mean + threshold * std) | (matrix.mean(axis=0) < mean - threshold * std)
-    print(f"RFI mask: {rfi_mask}")
-    matrix[:,rfi_mask] = 0
-    return matrix
 
 
 

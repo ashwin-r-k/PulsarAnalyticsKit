@@ -104,14 +104,15 @@ class pulsar_analysis:
         self.intensity_matrix_ch_s = Intensity_Matrix
 
 
-    def RFI_mitigation(self, freq_ch_threshold=1,time_ch_threshold=7,fill_value=0):
+    def RFI_mitigation(self, freq_ch_std_threshold=1.0,freq_ch_mean_threshold=1.0,time_ch_threshold=5.0,fill_value=0):
         """
         Simple RFI mitigation by clipping values above a threshold.
         """
         for ch in range(self.n_channels):
             self.intensity_matrix_ch_s[ch] = remove_rfi_by_std(self.intensity_matrix_ch_s[ch],
-                               chan_sigma_thresh=freq_ch_threshold,
+                               chan_sigma_thresh=freq_ch_std_threshold,
                                sample_sigma_thresh=time_ch_threshold,
+                               chan_mean_thresh = freq_ch_mean_threshold,
                                fill_value=fill_value)
     
 
