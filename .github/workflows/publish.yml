@@ -1,22 +1,15 @@
-name: Build and Publish Release
-
 on:
   push:
     branches:
       - main
-    # Trigger only if commit message starts with "publish:"
-    # Use a filter on the commit message
-    # We’ll use a conditional job instead
 
 jobs:
   build-and-release:
     if: startsWith(github.event.head_commit.message, 'publish:')
-    runs-on: ubuntu-latest
-
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest]
-
+    runs-on: ${{ matrix.os }}
     name: Build & Release on ${{ matrix.os }}
 
     steps:
@@ -28,25 +21,48 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install dependencies
+      - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pyinstaller
+          pip install -r requirements.txt pyinstaller
 
       - name: Read version
         id: read_version
-        run: |
-          echo "VERSION=$(cat version.txt)" >> $GITHUB_ENV
+        run: echo "VERSION=$(cat version.txt)" >> $GITHUB_ENV
 
-      - name: Build executable (Windows or Linux)
+      - name: Install appimagetool (Linux only)
+        if: matrix.os == 'ubuntu-latest'
         run: |
-          if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
-            pyinstaller --noconfirm --clean ./mainbuild.spec
-          else
-            pyinstaller --noconfirm --clean ./mainbuild.spec
-          fi
+          sudo apt-get update
+          sudo apt-get install -y libfuse2
+          wget https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
+          chmod +x appimagetool-x86_64.AppImage
+          mv appimagetool-x86_64.AppImage /usr/local/bin/appimagetool
+
+      - name: Build executable
+        run: |
+          pyinstaller --noconfirm --clean ./mainbuild.spec
         shell: bash
+
+      - name: Build AppImage (Linux only)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          mkdir -p AppDir/usr/bin
+          cp dist/PulsarAnalyticsKit-${{ env.VERSION }}-linux AppDir/usr/bin/PulsarAnalyticsKit
+          chmod +x AppDir/usr/bin/PulsarAnalyticsKit
+
+          mkdir -p AppDir/usr/share/icons/hicolor/256x256/apps
+          cp ./guibase/logo.png AppDir/usr/share/icons/hicolor/256x256/apps/pulsar.png
+
+          mkdir -p AppDir/usr/share/applications
+          echo "[Desktop Entry]
+          Name=Pulsar Analytics Kit
+          Exec=PulsarAnalyticsKit
+          Icon=pulsar
+          Type=Application
+          Categories=Science;Education;" > AppDir/usr/share/applications/pulsar.desktop
+
+          ./appimagetool AppDir "PulsarAnalyticsKit-${{ env.VERSION }}.AppImage"
 
       - name: Upload Release
         uses: softprops/action-gh-release@v2
@@ -54,6 +70,7 @@ jobs:
           tag_name: v${{ env.VERSION }}
           name: v${{ env.VERSION }}
           files: |
-            dist/PulsarAnalyticsKit-${{ env.VERSION }}.*
+            dist/PulsarAnalyticsKit-${{ env.VERSION }}-win.exe
+            PulsarAnalyticsKit-${{ env.VERSION }}.AppImage
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

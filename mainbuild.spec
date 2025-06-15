@@ -16,8 +16,7 @@ if sys.platform.startswith("win"):
 elif sys.platform.startswith("linux"):
     icon_file = "./guibase/logo.png"
     hidden_imports = []
-    output_name = f"PulsarAnalyticsKit-{APP_VERSION}-linux.APPIMAGE"
-
+    output_name = f"PulsarAnalyticsKit-{APP_VERSION}-linux"
 
 
 a = Analysis(
