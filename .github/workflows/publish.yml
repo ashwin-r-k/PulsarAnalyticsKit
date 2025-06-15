@@ -75,16 +75,12 @@ jobs:
           ls -la
           echo "Building AppImage LinuxDeploy..."
           
-          ./linuxdeploy-x86_64.AppImage -v1 \
+          ./linuxdeploy -v1 \
               --appdir AppDir \
               --output appimage \
               --executable app \
               --desktop-file AppDir/pulsar.desktop \
               --icon-file AppDir/pulsar.png
-
-          chmod +x appimagetool
-
-          ./appimagetool AppDir "PulsarAnalyticsKit-${{ env.VERSION }}.AppImage"
 
           chmod +x appimagetool
           ./appimagetool AppDir "PulsarAnalyticsKit-${{ env.VERSION }}.AppImage"
