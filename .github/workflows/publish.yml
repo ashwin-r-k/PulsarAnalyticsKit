@@ -68,8 +68,8 @@ jobs:
           Type=Application
           Categories=Science;" > AppDir/usr/share/applications/pulsar.desktop
 
-          ln -s AppDir/usr/share/applications/pulsar.desktop AppDir/pulsar.desktop
-          ln -s AppDir/usr/share/icons/hicolor/256x256/apps/pulsar.png / AppDir/pulsar.png
+          cp AppDir/usr/share/applications/pulsar.desktop AppDir/pulsar.desktop
+          cp AppDir/usr/share/icons/hicolor/256x256/apps/pulsar.png AppDir/pulsar.png
           chmod 644 AppDir/usr/share/applications/pulsar.desktop
 
           ls -la
