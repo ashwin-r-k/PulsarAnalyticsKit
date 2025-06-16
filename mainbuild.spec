@@ -53,5 +53,6 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=icon_file
+    icon=icon_file,
+    version='version_info.txt'
 )

@@ -14,6 +14,8 @@ jobs:
   build-windows:
     if: startsWith(github.event.head_commit.message, 'publish:')
     runs-on: windows-latest
+    env:
+      TOKEN: ${{ secrets.GITHUB_TOKEN }}
     outputs:
       version: ${{ steps.read_version.outputs.version }}
     steps:
@@ -43,6 +45,7 @@ jobs:
       - name: Build Windows Executable
         run: |
           echo "Current directory: $(pwd)"
+          pyrcc5 images.qrc -o images_rc.py
           pyinstaller --noconfirm --clean ./mainbuild.spec
           echo "Files in dist directory:"
           dir dist
@@ -57,6 +60,8 @@ jobs:
   build-linux:
     needs: build-windows
     runs-on: ubuntu-latest
+    env:
+      TOKEN: ${{ secrets.GITHUB_TOKEN }}
     outputs:
       version: ${{ steps.read_version.outputs.version }}
     steps:
@@ -97,6 +102,7 @@ jobs:
       - name: Build Linux Executable
         run: |
           echo "Current directory: $(pwd)"
+          pyrcc5 images.qrc -o images_rc.py
           pyinstaller --noconfirm --clean ./mainbuild.spec
           echo "Files in dist directory:"
           ls -lh dist

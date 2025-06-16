@@ -13,3 +13,4 @@ AppDir/*
 appimagetool
 linuxdeploy
 PulsarAnalyticsKit*.AppImage
+token.txt

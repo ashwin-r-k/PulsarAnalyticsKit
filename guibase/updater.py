@@ -1,46 +1,40 @@
-from PyQt5.QtWidgets import QMessageBox, QProgressDialog, QApplication
+from PyQt5.QtWidgets import QMessageBox, QProgressDialog
 from PyQt5.QtCore import Qt
-import os, platform, requests
+import os, platform, requests, sys
 
 REPO = "ashwin-r-k/PulsarAnalyticsKit"
-VERSION_FILE = "version.txt"
-
-def get_local_version():
-    try:
-        with open(VERSION_FILE) as f:
-            return f.read().strip()
-    except FileNotFoundError:
-        return "0.0.0"
+token = os.environ.get("TOKEN")
+headers = {"Authorization": f"token {token}"} if token else {}
 
 def get_latest_release_info():
     url = f"https://api.github.com/repos/{REPO}/releases/latest"
     try:
-        r = requests.get(url)
+        r = requests.get(url, headers=headers)
         if r.status_code == 200:
             return r.json()
-    except:
-        pass
+    except Exception as e:
+        print("Error fetching release info:", e)
     return None
 
 def find_asset(release_data):
     os_type = platform.system().lower()
     for asset in release_data.get("assets", []):
         name = asset["name"].lower()
+        print(name)
         if os_type == "windows" and name.endswith(".exe"):
             return asset
-        elif os_type == "linux" and (".appimage" in name or name.endswith(".AppImage")):
+        elif os_type == "linux" and (".appimage" in name or name.endswith(".appimage")):
             return asset
     return None
 
-def download_asset(asset, version, parent=None):
+def download_asset(asset, parent=None):
     url = asset["browser_download_url"]
     name = asset["name"]
-    filename = f"{name.rsplit('.', 1)[0]}-{version}.{name.rsplit('.', 1)[-1]}"
-    dest_path = os.path.join(os.path.dirname(__file__), filename)
+    dest_path = os.path.join(os.path.dirname(sys.argv[0]), name)
 
     progress = QProgressDialog("Downloading update...", "Cancel", 0, 100, parent)
-    # progress.setWindowModality(Qt.WindowModal)
     progress.setWindowTitle("Updater")
+    progress.setWindowModality(Qt.WindowModality.WindowModal)
     progress.show()
 
     r = requests.get(url, stream=True)
@@ -53,40 +47,49 @@ def download_asset(asset, version, parent=None):
                 r.close()
                 os.remove(dest_path)
                 return None
-            f.write(chunk)
-            downloaded += len(chunk)
-            progress.setValue(int(downloaded * 100 / total))
+            if chunk:
+                f.write(chunk)
+                downloaded += len(chunk)
+                progress.setValue(int(downloaded * 100 / total))
     progress.setValue(100)
-    return filename
+    return dest_path
 
-def auto_update_gui(parent=None):
-    local_version = get_local_version()
+def auto_update_gui(parent=None, current_version=None):
     release = get_latest_release_info()
-
     if not release:
         QMessageBox.warning(parent, "Update Check", "Could not fetch latest release info.")
-        return False
+        return None
 
     remote_version = release["tag_name"].lstrip("v")
+    asset = find_asset(release)
+    if not asset:
+        QMessageBox.warning(parent, "No Compatible File", "No suitable file found for this OS.")
+        return None
 
-    if local_version != remote_version:
-        reply = QMessageBox.question(parent, "Update Available",
-                                     f"A new version ({remote_version}) is available.\n"
-                                     f"Current: {local_version}\nDo you want to update?",
-                                     QMessageBox.Yes | QMessageBox.No)
+    # Only download if remote_version > current_version
+    if current_version is not None:
+        def version_tuple(v):
+            return tuple(map(int, (v.split("."))))
+        try:
+            if version_tuple(remote_version) <= version_tuple(current_version):
+                QMessageBox.information(parent, "No Update Needed",
+                    f"You already have the latest version ({current_version}).")
+                return None
+        except Exception as e:
+            print("Version comparison failed:", e)
+            # If version parsing fails, proceed with update
 
-        if reply == QMessageBox.Yes:
-            asset = find_asset(release)
-            if asset:
-                filename = download_asset(asset, remote_version, parent)
-                if filename:
-                    QMessageBox.information(parent, "Update Complete",
-                                            f"Update downloaded as:\n{filename}")
-                    return True
-                else:
-                    QMessageBox.warning(parent, "Download Cancelled", "Update cancelled by user.")
-            else:
-                QMessageBox.warning(parent, "No Compatible File", "No suitable file found for this OS.")
-    else:
-        QMessageBox.information(parent, "Up to Date", "You are already using the latest version.")
-    return False
+    reply = QMessageBox.question(parent, "Update Available",
+                                 f"A new version ({remote_version}) is available.\n"
+                                 f"Do you want to download and update now?",
+                                 QMessageBox.Yes | QMessageBox.No)
+    if reply == QMessageBox.Yes:
+        filename = download_asset(asset, parent)
+        if filename:
+            QMessageBox.information(parent, "Update Complete",
+                                    f"Update downloaded as:\n{filename}\n\n"
+                                    "The new version will now start. This instance will close.")
+            return filename
+        else:
+            QMessageBox.warning(parent, "Download Cancelled", "Update cancelled by user.")
+    return None

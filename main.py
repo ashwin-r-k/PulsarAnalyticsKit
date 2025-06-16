@@ -10,26 +10,7 @@ import os
 import platform
 from PyQt5.QtWidgets import QApplication, QMessageBox
 # Set up QApplication early for dialogs
-# app2 = QApplication(sys.argv)
-
-# # Ask user if they want to check for updates
-# reply = QMessageBox.question(
-#     None,
-#     "Check for Updates",
-#     "Do you want to check for updates before starting?",
-#     QMessageBox.Yes | QMessageBox.No,
-#     QMessageBox.No
-# )
-
-# updated = False
-
-# If the user chooses to check for updates, run the auto_update function
-
-# if reply == QMessageBox.Yes:
-#     updated = auto_update_gui(app2)
-# else:
-#     updated = False
-
+app2 = QApplication(sys.argv)
 if platform.system() == "Windows":
     os.environ['QT_QPA_PLATFORM'] = 'windows'  # Often not needed on Windows
     # QMessageBox.information(None, "Windows Platform Detected", "Running on Windows platform.")
@@ -40,6 +21,45 @@ else:
     print("Unsupported platform. Defaulting to offscreen.")
     # QMessageBox.information(None, "Unsupported Platform", "This application is not supported on your platform. Defaulting to offscreen mode.")
     os.environ['QT_QPA_PLATFORM'] = 'offscreen'  # Fallback option
+
+# Ask user if they want to check for updates
+reply = QMessageBox.question(
+    None,
+    "Check for Updates",
+    "Do you want to check for updates before starting?",
+    QMessageBox.Yes | QMessageBox.No,
+    QMessageBox.No
+)
+
+# load the current version from the version.txt
+def load_current_version(version_file="version.txt"):
+    """
+    Load the current version from a file.
+    Returns the version as a string.
+    """
+    if not os.path.exists(version_file):
+        return "0.0.0"  # Default version if file doesn't exist
+    with open(version_file, "r") as f:
+        return f.read().strip()
+
+current_version = load_current_version(version_file="version.txt")
+
+# If the user chooses to check for updates, run the auto_update function
+updated_file = None
+if reply == QMessageBox.Yes:
+    updated_file = auto_update_gui(None, current_version=current_version)  # Replace with your actual version
+
+if updated_file:
+    # Launch the new file and exit this one
+    import subprocess
+    import platform
+    if platform.system() == "Windows":
+        subprocess.Popen(['start', '', updated_file], shell=True)
+    elif platform.system() == "Linux":
+        # subprocess.Popen(['chmod', '+x', updated_file])
+        os.chmod(updated_file, 0o755)
+        subprocess.Popen([updated_file])
+    sys.exit(0)
 
 
 
@@ -77,14 +97,8 @@ def verify_requirements(requirements_path="requirements.txt"):
 
 
 # Optionally run check at startup
-# verify_requirements()
+verify_requirements()
 
-# if updated:
-#     # import sys
-#     # from PyQt5.QtWidgets import QMessageBox, QApplication
-#     # app = QApplication(sys.argv)
-#     QMessageBox.information(None, "Update Complete", "The application has been updated. Please restart it.")
-#     sys.exit(0)
 
 
 if __name__ == '__main__':

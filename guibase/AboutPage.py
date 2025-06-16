@@ -1,6 +1,15 @@
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QHBoxLayout, QSpacerItem, QSizePolicy
 from PyQt5.QtGui import QPixmap
+from PyQt5 import QtCore
 from PyQt5.QtCore import Qt
+import sys
+import os
+import images_rc  # This line loads the Qt resources
+
+def resource_path(relative_path):
+    base_path = getattr(sys, '_MEIPASS', os.path.abspath("."))
+    return os.path.join(base_path, relative_path)
+
 
 class AboutPage(QWidget):
     def __init__(self, main_window):
@@ -18,24 +27,39 @@ class AboutPage(QWidget):
         # Image and Info Row
         info_layout = QHBoxLayout()
 
-        # Optional Image (replace with your image path)
+        # Image loading using Qt resource system
         image_label = QLabel()
-        try:
-            pixmap = QPixmap("./guibase/profile.png")  # Use your image path here
+        pixmap = QPixmap(":/images/guibase/profile.png")
+        if not pixmap.isNull():
             pixmap = pixmap.scaled(120, 120)
             image_label.setPixmap(pixmap)
-        except:
+        else:
             image_label.setText("[No Image]")
-            # image_label.setAlignment(Qt.AlignCenter)
 
         info_layout.addWidget(image_label)
 
         # Info Text
         text_layout = QVBoxLayout()
-        text_layout.addWidget(QLabel("Developer: Ashwin Kharat"))
-        text_layout.addWidget(QLabel("Email: aswinrk24@iitk.ac.in"))
+        text_layout.addWidget(QLabel("Developer: Ashwin Raju Kharat"))
+
+        # Add website and other links as clickable
+        website = QLabel('<a href="https://ashwinrk.com">Website: https://ashwinrk.com</a>')
+        website.setOpenExternalLinks(True)
+        text_layout.addWidget(website)
+
+        linkedin = QLabel('<a href="https://www.linkedin.com/in/ashwinlrk/">LinkedIn: https://www.linkedin.com/in/ashwinlrk/</a>')
+        linkedin.setOpenExternalLinks(True)
+        text_layout.addWidget(linkedin)
+
+        email = QLabel('<a href="mailto:ashwin@ashwinrk.com">Email: aswinrk24@iitk.ac.in</a>')
+        email.setOpenExternalLinks(True)
+        text_layout.addWidget(email)
+
         text_layout.addWidget(QLabel("Affiliation: SPASE, IIT Kanpur"))
-        text_layout.addWidget(QLabel("GitHub: github.com/ashwin-r-k"))
+
+        github = QLabel('<a href="https://github.com/ashwin-r-k">GitHub: https://github.com/ashwin-r-k</a>')
+        github.setOpenExternalLinks(True)
+        text_layout.addWidget(github)
 
         info_layout.addLayout(text_layout)
         info_layout.addItem(QSpacerItem(20, 0, QSizePolicy.Expanding, QSizePolicy.Minimum))
