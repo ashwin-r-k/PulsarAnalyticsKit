@@ -1,3 +1,5 @@
+name: Build & Release
+
 on:
   push:
     branches:
@@ -5,22 +7,20 @@ on:
 
 permissions:
   contents: write
-
-
+  
 jobs:
-  build-and-release:
-    if: startsWith(github.event.head_commit.message, 'publish:')
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
-    name: Build & Release on ${{ matrix.os }}
 
+  # 1. Build Windows Executable
+  build-windows:
+    if: startsWith(github.event.head_commit.message, 'publish:')
+    runs-on: windows-latest
+    outputs:
+      version: ${{ steps.read_version.outputs.version }}
     steps:
-      - name: Checkout source
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Python 3.11
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
@@ -32,40 +32,89 @@ jobs:
 
       - name: Read version
         id: read_version
-        run: echo "VERSION=$(cat version.txt)" >> $GITHUB_ENV
+        shell: bash
+        run: |
+          echo "Reading version..."
+          cat version.txt
+          VERSION=$(cat version.txt)
+          echo "VERSION=$VERSION"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-      - name: Install appimagetool (Linux only)
-        if: matrix.os == 'ubuntu-latest'
+      - name: Build Windows Executable
+        run: |
+          echo "Current directory: $(pwd)"
+          pyinstaller --noconfirm --clean ./mainbuild.spec
+          echo "Files in dist directory:"
+          dir dist
+
+      - name: Upload Windows Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-exe
+          path: dist/PulsarAnalyticsKit-*.exe
+
+  # 2. Build Linux AppImage
+  build-linux:
+    needs: build-windows
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.read_version.outputs.version }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt pyinstaller
+
+      - name: Read version
+        id: read_version
+        run: |
+          echo "Reading version..."
+          cat version.txt
+          VERSION=$(cat version.txt)
+          echo "VERSION=$VERSION"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Install AppImage Tools
         run: |
           sudo apt-get update
           sudo apt-get install -y libfuse2
           wget https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
           chmod +x appimagetool-x86_64.AppImage
           mv appimagetool-x86_64.AppImage appimagetool
-
           wget https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
           chmod +x linuxdeploy-x86_64.AppImage
           mv linuxdeploy-x86_64.AppImage linuxdeploy
+          echo "AppImage tools installed."
 
-      - name: Build executable
+      - name: Build Linux Executable
         run: |
+          echo "Current directory: $(pwd)"
           pyinstaller --noconfirm --clean ./mainbuild.spec
-        shell: bash
+          echo "Files in dist directory:"
+          ls -lh dist
 
-      - name: Build AppImage (Linux only)
-        if: matrix.os == 'ubuntu-latest'
+      - name: Build AppImage
         run: |
-
+          VERSION=$(cat version.txt)
           mkdir -p AppDir/usr/bin
-          cp dist/PulsarAnalyticsKit-${{ env.VERSION }}-linux AppDir/usr/bin/PulsarAnalyticsKit
+          cp dist/PulsarAnalyticsKit-${VERSION}-linux AppDir/usr/bin/PulsarAnalyticsKit
           chmod +x AppDir/usr/bin/PulsarAnalyticsKit
+
           mkdir -p AppDir/usr/share/icons/hicolor/256x256/apps
           cp ./guibase/logo.png AppDir/usr/share/icons/hicolor/256x256/apps/pulsar.png
           mkdir -p AppDir/usr/share/applications
 
           echo "[Desktop Entry]
           Version=1.0
-          X-AppVersion=${{ env.VERSION }}
+          X-AppVersion=${VERSION}
           Name=Pulsar Analytics Kit
           Exec=PulsarAnalyticsKit
           Icon=pulsar
@@ -76,36 +125,61 @@ jobs:
           cp AppDir/usr/share/icons/hicolor/256x256/apps/pulsar.png AppDir/pulsar.png
           chmod 644 AppDir/usr/share/applications/pulsar.desktop
 
-          echo "Building AppImage LinuxDeploy..."
-          
+          echo "Running linuxdeploy..."
           ./linuxdeploy -v1 \
-              --appdir AppDir \
-              --output appimage \
-              --executable app \
-              --desktop-file AppDir/pulsar.desktop \
-              --icon-file AppDir/pulsar.png
+            --appdir AppDir \
+            --output appimage \
+            --desktop-file AppDir/pulsar.desktop \
+            --icon-file AppDir/pulsar.png
 
+          echo "Creating AppImage..."
           chmod +x appimagetool
-          ./appimagetool AppDir "PulsarAnalyticsKit-${{ env.VERSION }}.AppImage"
-          
+          ./appimagetool AppDir "PulsarAnalyticsKit-${VERSION}.AppImage"
+          echo "AppImage created:"
+          ls -lh PulsarAnalyticsKit-*.AppImage
 
-      - name: Debug version value
-        run: | 
-          echo "VERSION is $VERSION"
-          echo ${{ env.VERSION }}
-          ls
-          ls dist
-        env:
-          VERSION: ${{ env.VERSION }}
+      - name: Upload Linux Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-appimage
+          path: PulsarAnalyticsKit-*.AppImage
 
+  # 3. Final GitHub Release Upload
+  upload-release:
+    needs: [build-windows, build-linux]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Windows Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-exe
+          path: ./release-assets
 
-      - name: Upload Release
+      - name: Download Linux Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: linux-appimage
+          path: ./release-assets
+
+      - name: Read version
+        id: read_version
+        run: |
+          VERSION=$(cat version.txt)
+          echo "VERSION=$VERSION"
+          echo "version=$VERSION" >> $GITHUB_ENV
+
+      - name: List files to be uploaded
+        run: |
+          echo "Files in release-assets:"
+          ls -lhR release-assets
+
+      - name: Create GitHub Release and Upload Assets
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ env.VERSION }}
-          name: v${{ env.VERSION }}
+          tag_name: v${{ env.version }}
+          name: v${{ env.version }}
           files: |
-            dist/PulsarAnalyticsKit-${{ env.VERSION }}-win.exe
-            PulsarAnalyticsKit-${{ env.VERSION }}.AppImage
+            release-assets/PulsarAnalyticsKit-*.exe
+            release-assets/PulsarAnalyticsKit-*.AppImage
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
