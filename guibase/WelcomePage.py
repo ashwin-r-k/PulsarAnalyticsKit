@@ -77,7 +77,7 @@ class WelcomePage(QWidget):
             update_btn = QPushButton("Update")
             update_btn.setStyleSheet("background-color: orange; font-weight: bold;")
             def do_update():
-                updated_file = auto_update_gui(self, current_version=current_version)
+                updated_file = auto_update_gui(self, current_version=current_version,release=release)
                 if updated_file:
                     if platform.system() == "Windows":
                         subprocess.Popen(['start', '', updated_file], shell=True)

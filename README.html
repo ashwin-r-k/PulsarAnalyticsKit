@@ -1,0 +1,60 @@
+
+<!DOCTYPE html>
+<head>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/github-gist.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/4.0.0/github-markdown.min.css" />
+    <link rel="stylesheet" href="" />
+    <meta charset="UTF-8">
+    <title>README</title>
+</head>
+<body class="markdown-body">
+    <h1 data-line="0" class="code-line" dir="auto" id="pulsaranalytics">PulsarAnalytics</h1>
+<p data-line="1" class="code-line" dir="auto">Modular pulsar data analysis and visualization pipeline</p>
+<h2 data-line="3" class="code-line" dir="auto" id="to-do-features">To Do Features</h2>
+<ul class="contains-task-list code-line" data-line="5" dir="auto">
+<li class="task-list-item enabled code-line" data-line="5" dir="auto"><input class="task-list-item-checkbox" checked=""type="checkbox"> Add mean check condition with the std to remove RFI</li>
+<li class="task-list-item enabled code-line" data-line="6" dir="auto"><input class="task-list-item-checkbox"type="checkbox"> Test making an interactive plot in gui</li>
+</ul>
+<h2 data-line="10" class="code-line" dir="auto" id="to-do-study-test-for-concepts">To Do Study Test for Concepts</h2>
+<ul class="contains-task-list code-line" data-line="11" dir="auto">
+<li class="task-list-item enabled code-line" data-line="11" dir="auto"><input class="task-list-item-checkbox"type="checkbox"> Take Ft for the Wole 1 sec or long data to find the Period of Pulsar.</li>
+</ul>
+<h2 data-line="15" class="code-line" dir="auto" id="to-build-the-standalone-package">To build the standalone package</h2>
+<p data-line="16" class="code-line" dir="auto">pip install pyinstaller
+pyinstaller --noconfirm --windowed --icon=./guibase/logo.ico main.py</p>
+<p data-line="19" class="code-line" dir="auto">pyinstaller --noconfirm --clean ./mainbuild.spec</p>
+<p data-line="21" class="code-line" dir="auto">mkdir -p AppDir/usr/bin
+cp dist/PulsarAnalyticsKit-${{ env.VERSION }}-linux AppDir/usr/bin/PulsarAnalyticsKit
+chmod +x AppDir/usr/bin/PulsarAnalyticsKit
+mkdir -p AppDir/usr/share/icons/hicolor/256x256/apps
+cp ./guibase/logo.png AppDir/usr/share/icons/hicolor/256x256/apps/pulsar.png
+mkdir -p AppDir/usr/share/applications</p>
+<p data-line="28" class="code-line" dir="auto">echo &quot;[Desktop Entry]
+Version=1.0
+X-AppVersion=${{ env.VERSION }}
+Name=Pulsar Analytics Kit
+Exec=PulsarAnalyticsKit
+Icon=pulsar
+Type=Application
+Categories=Science;Education;&quot; &gt; AppDir/usr/share/applications/pulsar.desktop</p>
+<p data-line="37" class="code-line" dir="auto">ln -s AppDir/usr/share/applications/pulsar.desktop AppDir/pulsar.desktop
+ln -s AppDir/usr/share/icons/hicolor/256x256/apps/pulsar.png / AppDir/pulsar.png
+chmod 644 AppDir/usr/share/applications/pulsar.desktop</p>
+<p data-line="41" class="code-line" dir="auto">ls -la
+echo &quot;Building AppImage LinuxDeploy...&quot;</p>
+<p data-line="44" class="code-line" dir="auto">wget <a href="https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage" data-href="https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage">https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage</a>
+chmod +x linuxdeploy-x86_64.AppImage
+mv linuxdeploy-x86_64.AppImage linuxdeploy</p>
+<p data-line="50" class="code-line" dir="auto">./linuxdeploy-x86_64.AppImage -v1 <br>
+--appdir AppDir <br>
+--output appimage <br>
+--executable app <br>
+--desktop-file AppDir/pulsar.desktop <br>
+--icon-file AppDir/pulsar.png</p>
+<p data-line="57" class="code-line" dir="auto">chmod +x appimagetool</p>
+<p data-line="59" class="code-line" dir="auto">./appimagetool AppDir &quot;PulsarAnalyticsKit-${{ env.VERSION }}.AppImage&quot;</p>
+
+</body>
+</html>

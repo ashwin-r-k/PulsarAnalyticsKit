@@ -2,25 +2,28 @@ from PyQt5.QtWidgets import QMessageBox, QProgressDialog
 from PyQt5.QtCore import Qt
 import os, platform, requests, sys
 
-REPO = "ashwin-r-k/PulsarAnalyticsKit"
-# runing this in terminal TOKEN=$( cat token.txt )
-token = os.environ.get("TOKEN")
-if token:
-    print("Using token for GitHub API requests from Environment.")
-elif os.path.exists("./token.txt"):
-    with open("./token.txt", "r") as f:
-        token = f.read().strip()
-        print("Loaded token from file.")
-else:
-    print("No token found for GitHub API requests. Rate limits may apply.")
-
-headers = {"Authorization": f"token {token}"} if token else {}
 
 def get_latest_release_info():
+    REPO = "ashwin-r-k/PulsarAnalyticsKit"
+    # runing this in terminal TOKEN=$( cat token.txt )
+    token = os.environ.get("TOKEN")
+    if token:
+        print("Using token for GitHub API requests from Environment.")
+    elif os.path.exists("./token.txt"):
+        with open("./token.txt", "r") as f:
+            token = f.read().strip()
+            print("Loaded token from file.")
+            print(token)
+    else:
+        print("No token found for GitHub API requests. Rate limits may apply.")
+
+    headers = {"Authorization": f"token {token}"} if token else {}
+
     url = f"https://api.github.com/repos/{REPO}/releases/latest"
     try:
         r = requests.get(url, headers=headers)
         if r.status_code == 200:
+            print("Successfully fetched release info.",r.json())
             return r.json()
     except Exception as e:
         print("Error fetching release info:", e)
@@ -64,8 +67,7 @@ def download_asset(asset, parent=None):
     progress.setValue(100)
     return dest_path
 
-def auto_update_gui(parent=None, current_version=None):
-    release = get_latest_release_info()
+def auto_update_gui(parent=None, current_version=None,release=None):
     if not release:
         QMessageBox.warning(parent, "Update Check", "Could not fetch latest release info.")
         return None

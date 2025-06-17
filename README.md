@@ -4,7 +4,7 @@ Modular pulsar data analysis and visualization pipeline
 ## To Do Features
 
 - [x] Add mean check condition with the std to remove RFI
-- [ ] Testk making an interactive plot in gui
+- [ ] Test making an interactive plot in gui
 
 
 
