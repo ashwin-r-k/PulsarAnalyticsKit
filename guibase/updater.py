@@ -3,7 +3,17 @@ from PyQt5.QtCore import Qt
 import os, platform, requests, sys
 
 REPO = "ashwin-r-k/PulsarAnalyticsKit"
+# runing this in terminal TOKEN=$( cat token.txt )
 token = os.environ.get("TOKEN")
+if token:
+    print("Using token for GitHub API requests from Environment.")
+elif os.path.exists("./token.txt"):
+    with open("./token.txt", "r") as f:
+        token = f.read().strip()
+        print("Loaded token from file.")
+else:
+    print("No token found for GitHub API requests. Rate limits may apply.")
+
 headers = {"Authorization": f"token {token}"} if token else {}
 
 def get_latest_release_info():
