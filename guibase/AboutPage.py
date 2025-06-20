@@ -4,11 +4,11 @@ from PyQt5 import QtCore
 from PyQt5.QtCore import Qt
 import sys
 import os
-import images_rc  # This line loads the Qt resources
+# import images_rc  # This line loads the Qt resources
 
-def resource_path(relative_path):
-    base_path = getattr(sys, '_MEIPASS', os.path.abspath("."))
-    return os.path.join(base_path, relative_path)
+# def resource_path(relative_path):
+#     base_path = getattr(sys, '_MEIPASS', os.path.abspath("."))
+#     return os.path.join(base_path, relative_path)
 
 
 class AboutPage(QWidget):
@@ -20,16 +20,24 @@ class AboutPage(QWidget):
 
         # Title
         title_label = QLabel("About Pulsar Analytics")
+        about = QLabel("\nThis tool was designed to support advanced pulsar data processing in a modular and accessible format.")
+
         # title_label.setAlignment(Qt.AlignCenter)
         title_label.setStyleSheet("font-size: 20px; font-weight: bold;")
         layout.addWidget(title_label)
+        layout.addWidget(about)
+        github_code = QLabel('Code Link: '+'<a href="https://github.com/ashwin-r-k/PulsarAnalyticsKit">PulsarAnalyticsKit</a>')
+        github_code.setOpenExternalLinks(True)
+        layout.addWidget(github_code)
 
         # Image and Info Row
         info_layout = QHBoxLayout()
 
         # Image loading using Qt resource system
         image_label = QLabel()
-        pixmap = QPixmap(":/images/guibase/profile.png")
+        # pixmap = QPixmap(":/images/guibase/profile.png")
+        pixmap = QPixmap("./guibase/profile.png")
+
         if not pixmap.isNull():
             pixmap = pixmap.scaled(120, 120)
             image_label.setPixmap(pixmap)
@@ -43,21 +51,24 @@ class AboutPage(QWidget):
         text_layout.addWidget(QLabel("Developer: Ashwin Raju Kharat"))
 
         # Add website and other links as clickable
-        website = QLabel('<a href="https://ashwinrk.com">Website: https://ashwinrk.com</a>')
+        website = QLabel('Website: '+'<a href="https://ashwinrk.com"> ashwinrk.com </a>')
         website.setOpenExternalLinks(True)
         text_layout.addWidget(website)
 
-        linkedin = QLabel('<a href="https://www.linkedin.com/in/ashwinlrk/">LinkedIn: https://www.linkedin.com/in/ashwinlrk/</a>')
+        linkedin = QLabel('LinkedIn: '+'<a href="https://www.linkedin.com/in/ashwinlrk/"> ashwinlrk/</a>')
         linkedin.setOpenExternalLinks(True)
         text_layout.addWidget(linkedin)
 
-        email = QLabel('<a href="mailto:ashwin@ashwinrk.com">Email: aswinrk24@iitk.ac.in</a>')
+        email = QLabel('Email: '+'<a href="mailto:ashwin@ashwinrk.com">ashwin@ashwinrk.com</a>')
         email.setOpenExternalLinks(True)
         text_layout.addWidget(email)
 
-        text_layout.addWidget(QLabel("Affiliation: SPASE, IIT Kanpur"))
+        affil = QLabel('Affiliation: '+'<a href="https://iitk.ac.in/space/"> SPASE, IIT Kanpur')
+        affil.setOpenExternalLinks(True)
+        text_layout.addWidget(affil)
 
-        github = QLabel('<a href="https://github.com/ashwin-r-k">GitHub: https://github.com/ashwin-r-k</a>')
+
+        github = QLabel('GitHub: '+'<a href="https://github.com/ashwin-r-k">ashwin-r-k</a>')
         github.setOpenExternalLinks(True)
         text_layout.addWidget(github)
 
@@ -67,7 +78,7 @@ class AboutPage(QWidget):
         layout.addLayout(info_layout)
 
         # Thank you message
-        thank_you = QLabel("\nThank you for using Pulsar Analytics!\nThis tool was designed to support advanced pulsar data processing in a modular and accessible format.")
+        thank_you = QLabel("\nThank you for using Pulsar Analytics!")
         # thank_you.setAlignment(Qt.AlignCenter)
         layout.addWidget(thank_you)
 

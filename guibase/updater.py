@@ -13,7 +13,6 @@ def get_latest_release_info():
         with open("./token.txt", "r") as f:
             token = f.read().strip()
             print("Loaded token from file.")
-            print(token)
     else:
         print("No token found for GitHub API requests. Rate limits may apply.")
 
@@ -23,7 +22,7 @@ def get_latest_release_info():
     try:
         r = requests.get(url, headers=headers)
         if r.status_code == 200:
-            print("Successfully fetched release info.",r.json())
+            print("Successfully fetched release info.")
             return r.json()
     except Exception as e:
         print("Error fetching release info:", e)
@@ -100,7 +99,7 @@ def auto_update_gui(parent=None, current_version=None,release=None):
         if filename:
             QMessageBox.information(parent, "Update Complete",
                                     f"Update downloaded as:\n{filename}\n\n"
-                                    "The new version will now start. This instance will close.")
+                                    "Please Reopen the updated version. This instance will close.")
             return filename
         else:
             QMessageBox.warning(parent, "Download Cancelled", "Update cancelled by user.")

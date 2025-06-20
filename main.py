@@ -60,8 +60,8 @@ if __name__ == '__main__':
 
     def show_main():
         welcome_page.close()
-        main_window = MainWindow()
-        main_window.show()
+        welcome_page.main_window = MainWindow()
+        welcome_page.main_window.show()
 
     welcome_page = WelcomePage(continue_callback=show_main)
     welcome_page.show()

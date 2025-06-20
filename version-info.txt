@@ -1,7 +1,7 @@
 VSVersionInfo(
   ffi=FixedFileInfo(
-    filevers=(0, 0, 3, 0),
-    prodvers=(0, 0, 3, 0),
+    filevers=(0, 0, 2, 0),
+    prodvers=(0, 0, 2, 0),
     mask=0x3f,
     flags=0x0,
     OS=0x40004,
@@ -16,12 +16,12 @@ VSVersionInfo(
         [
           StringStruct('CompanyName', 'Ashwin K'),
           StringStruct('FileDescription', 'Pulsar Analytics Kit - Scientific Data Viewer'),
-          StringStruct('FileVersion', '0.0.3'),
+          StringStruct('FileVersion', '0.0.2'),
           StringStruct('InternalName', 'PulsarAnalyticsKit'),
           StringStruct('LegalCopyright', '© 2025 Ashwin K'),
           StringStruct('OriginalFilename', 'PulsarAnalyticsKit.exe'),
           StringStruct('ProductName', 'Pulsar Analytics Kit'),
-          StringStruct('ProductVersion', '0.0.3'),
+          StringStruct('ProductVersion', '0.0.2'),
           StringStruct('Comments', 'https://ashwinrk.com')
         ]
       )

@@ -48,7 +48,7 @@ jobs:
       - name: Build Windows Executable
         run: |
           echo "Current directory: $(pwd)"
-          pyrcc5 images.qrc -o images_rc.py
+          # pyrcc5 images.qrc -o images_rc.py
           pyinstaller --noconfirm --clean ./mainbuild.spec
           echo "Files in dist directory:"
           dir dist
@@ -108,7 +108,7 @@ jobs:
       - name: Build Linux Executable
         run: |
           echo "Current directory: $(pwd)"
-          pyrcc5 images.qrc -o images_rc.py
+          # pyrcc5 images.qrc -o images_rc.py
           pyinstaller --noconfirm --clean ./mainbuild.spec
           echo "Files in dist directory:"
           ls -lh dist
@@ -192,7 +192,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ env.version }} 
-          name: v${{ env.version }}
+          name: v${{ env.version }} 
           files: |
             release-assets/PulsarAnalyticsKit-*.exe
             release-assets/PulsarAnalyticsKit-*.AppImage

@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton, QHBoxLayout, QApplication
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton, QHBoxLayout
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap
 import sys
@@ -45,7 +45,7 @@ class WelcomePage(QWidget):
         layout.addWidget(title)
 
         # Intro
-        intro = QLabel("A scientific data viewer and analysis toolkit for pulsar research.\nDeveloped by Ashwin Kharat.")
+        intro = QLabel("A scientific data viewer and analysis toolkit for pulsar research.\nDeveloped at SPASE, IIT Kanpur.")
         intro.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         layout.addWidget(intro)
 
@@ -79,12 +79,13 @@ class WelcomePage(QWidget):
             def do_update():
                 updated_file = auto_update_gui(self, current_version=current_version,release=release)
                 if updated_file:
-                    if platform.system() == "Windows":
-                        subprocess.Popen(['start', '', updated_file], shell=True)
-                    elif platform.system() == "Linux":
+                    # if platform.system() == "Windows":
+                    #     # subprocess.Popen(['start', '', updated_file], shell=True)
+                    if platform.system() == "Linux":
                         os.chmod(updated_file, 0o755)
-                        subprocess.Popen([updated_file])
+                        # subprocess.Popen([updated_file])
                     sys.exit(0)
+
             update_btn.clicked.connect(do_update)
             version_layout.addWidget(update_btn)
 
@@ -124,21 +125,16 @@ class WelcomePage(QWidget):
 
         continue_btn = QPushButton("Continue to Application")
         continue_btn.setStyleSheet("background-color: lightblue; font-weight: bold;")
+        
         layout.addWidget(continue_btn)
+
         if continue_callback:
             continue_btn.clicked.connect(continue_callback)
-        else:
-            sys.exit(0)
+        # else:
+        #     sys.exit(0)
 
         author = QLabel("© 2025 Ashwin Kharat")
         author.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         layout.addWidget(author)
         self.setLayout(layout)
 
-
-
-# if __name__ == '__main__':
-#     app = QApplication(sys.argv)
-#     window = WelcomePage()
-#     window.show()
-#     sys.exit(app.exec_())
