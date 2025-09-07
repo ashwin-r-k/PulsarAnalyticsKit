@@ -261,6 +261,8 @@ def fit_multiple_gaussians(profile, num_peaks, distance, width, to_plot=False):
     
     if len(snrs_clean) >= max(1, num_peaks * 0): #max(1, num_peaks * 0.3) #ensures at least 1 peak
         return np.mean(snrs_clean)
+
+    #just testing to reuurn sun not mean
     else:
         print(f"Warning: Only {len(snrs_clean)} valid fits (expected {num_peaks}).")
         return 0
@@ -294,3 +296,85 @@ def anti_line_noise_median(mat):
     mat = mat / norm
     mat = mat - np.min(mat, axis=0)
     return mat
+
+
+def calculate_stokes_parameters(channel0, channel1):
+    """
+    Calculate Stokes parameters from two orthogonal polarization channels.
+    
+    Parameters
+    ----------
+    channel0 : np.ndarray
+        Data from the first polarization channel
+    channel1 : np.ndarray
+        Data from the second polarization channel
+    
+    Returns
+    -------
+    tuple of np.ndarray
+        (I, Q, U, V) Stokes parameters
+        I: Total intensity
+        Q: Linear polarization (horizontal vs vertical)
+        U: Linear polarization (diagonal)
+        V: Circular polarization
+    """
+    # Ensure inputs are numpy arrays and have the same shape
+    channel0 = np.asarray(channel0)
+    channel1 = np.asarray(channel1)
+    
+    if channel0.shape != channel1.shape:
+        raise ValueError("Input channels must have the same shape")
+    
+    # Calculate Stokes parameters
+    # I = total intensity
+    I = channel0 + channel1
+    
+    # Q = difference between horizontal and vertical polarization
+    Q = channel0 - channel1
+    
+    # For U and V, we need phase information which is typically not directly available
+    # in intensity data. In practice, U and V require complex voltage data or
+    # special instrumentation setup.
+    # Here, we'll set them to zeros as placeholders
+    U = np.zeros_like(I)
+    V = np.zeros_like(I)
+    
+    return I, Q, U, V
+
+
+def calculate_polarization_parameters(I, Q, U, V):
+    """
+    Calculate polarization parameters from Stokes parameters.
+    
+    Parameters
+    ----------
+    I, Q, U, V : np.ndarray
+        Stokes parameters
+    
+    Returns
+    -------
+    tuple
+        (L, P, PA) where:
+        L: Linear polarization
+        P: Total polarization fraction
+        PA: Polarization angle in degrees
+    """
+    # Linear polarization
+    L = np.sqrt(Q**2 + U**2)
+    
+    # Total polarization
+    P = np.sqrt(Q**2 + U**2 + V**2)
+    
+    # Fractional polarization (between 0 and 1)
+    # Using np.clip to avoid division by zero and limit to [0,1]
+    P_frac = np.zeros_like(I)
+    nonzero_idx = I > 0
+    P_frac[nonzero_idx] = np.clip(P[nonzero_idx] / I[nonzero_idx], 0, 1)
+    
+    # Polarization angle (in degrees)
+    # PA = 0.5 * np.arctan2(U, Q) * (180/np.pi)
+    PA = np.zeros_like(I)
+    valid_idx = (Q != 0) | (U != 0)
+    PA[valid_idx] = 0.5 * np.arctan2(U[valid_idx], Q[valid_idx]) * (180/np.pi)
+    
+    return L, P_frac, PA

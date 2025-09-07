@@ -75,7 +75,7 @@ def plot_intensity_matrix(self, channel, gamma=2.5, dedispersed=False,choped=Fal
     plt.show()
 
 
-def plot_intensity_matrix_single(matrix, block_size,avg_blocks,sample_rate,bandwidth_MHZ,center_freq_MHZ,gamma=2.5):
+def plot_intensity_matrix_single(matrix, block_size,avg_blocks,sample_rate,bandwidth_MHZ,center_freq_MHZ,gamma=2.5,power_profile=False):
 
     num_segments, n_freq = matrix.shape
     time_bin_us = (block_size * avg_blocks / sample_rate) * 1e6
@@ -102,9 +102,63 @@ def plot_intensity_matrix_single(matrix, block_size,avg_blocks,sample_rate,bandw
     plt.yticks(yticks)
     plt.show()
 
+    if power_profile:
+        # plot power profile
+        power_profile = np.mean(matrix, axis=1)
+        plt.figure(figsize=(10, 4))
+        plt.plot(power_profile, color='royalblue')
+        plt.xlabel("Time (ms)")
+        plt.ylabel("Average Power")
+        plt.title("Average Power Profile")
+        plt.grid(True)
+        plt.show()
+
+
+def plot_power_profiles_by_band(matrix, center_freq_MHZ, bandwidth_MHZ, 
+                                 num_bands=10, sample_rate=33e6, block_size=512, avg_blocks=60,
+                                 colormap='viridis', vertical_offset=0.2, alpha=0.8):
+    """
+    Plots multiple power profiles by dividing the frequency axis into bands.
+
+    Parameters:
+    - matrix: 2D intensity matrix [time, frequency]
+    - center_freq_MHZ: Center frequency in MHz
+    - bandwidth_MHZ: Total bandwidth in MHz
+    - num_bands: Number of frequency subbands to split into
+    - sample_rate: Sampling rate in Hz
+    - block_size, avg_blocks: To compute time bin size
+    - colormap: matplotlib colormap name for coloring profiles
+    - vertical_offset: offset between profiles
+    - alpha: transparency of plots
+    """
+    num_segments, n_freq = matrix.shape
+    time_bin_us = (block_size * avg_blocks / sample_rate) * 1e6
+    time_axis_ms = np.arange(num_segments) * time_bin_us / 1000
+
+    band_size = n_freq // num_bands
+    cmap = plt.get_cmap(colormap)
+
+    plt.figure(figsize=(12, 6))
+    for i in range(num_bands):
+        start = i * band_size
+        end = (i + 1) * band_size if i < num_bands - 1 else n_freq
+        band_matrix = matrix[:, start:end]
+        power_profile = np.mean(band_matrix, axis=1)
+
+        color = cmap(i / num_bands)
+        plt.plot(time_axis_ms, power_profile + i * vertical_offset, 
+                 color=color, alpha=alpha, label=f'Band {i+1}: {start}-{end}')
+
+    plt.xlabel("Time (ms)")
+    plt.ylabel("Power + offset")
+    plt.title(f"Power Profiles Across Frequency Bands ({num_bands} bands)")
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+    plt.show()
+
 
 def Plot_characterstics(self, channel):
-    ch = self.raw_data[:10000, channel]
+    ch = self.raw_data[:1000, channel]
     label = self.channel_names[channel]
     color = 'green' if channel == 1 else 'darkorange'
 
@@ -157,7 +211,7 @@ def analyze_autocorrelation(self, channel=1, label=""):
     for i in range(n_freq):
         ch_freq = matrix[:, i]
         n = len(ch_freq)
-        acorr = correlate(ch_freq - np.mean(ch_freq), ch_freq - np.mean(ch_freq), mode='full') / n
+        acorr = correlate(ch_freq - np.mean(ch_freq), ch_freq - np.mean(ch_freq), mode='full') / n  # type: ignore
         lags = np.arange(-n + 1, n) * t_bin_s
         acorr_centered = acorr[n-1+1:]
         peak_idx = np.argmax(acorr_centered)
@@ -284,7 +338,7 @@ def compare_channels(ch1,ch2, fs, label=""):
 
     # Cross-Correlation
     lags = np.arange(-n + 1, n)
-    cross_corr = correlate(ch1 - np.mean(ch1), ch2 - np.mean(ch2), mode='full') / n
+    cross_corr = correlate(ch1 - np.mean(ch1), ch2 - np.mean(ch2), mode='full') / n # type: ignore
     time_lags = lags / fs
 
     # Plotting

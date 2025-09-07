@@ -41,10 +41,18 @@ class pulsar_analysis:
         self.dedispersion_measure :float
         self.skip_rows:int = skip_rows
 
+        # Stokes parameters (I, Q, U, V)
+        self.stokes_parameters = np.empty(4, dtype=object)
+        
+        # Derived polarization parameters
+        self.L = None  # Linear polarization
+        self.P_frac = None  # Polarization fraction
+        self.PA = None  # Polarization angle
+
         self.load_data()  # Automatically load data upon object creation
 
         for k, v in vars(self).items():
-            if k in ['raw_data', 'intensity_matrix_ch_s', 'dedispersed_ch_s']:
+            if k in ['raw_data', 'intensity_matrix_ch_s', 'dedispersed_ch_s','stokes_parameters']:
                 print(f"\033[1;34m{k}\033[0m shape :  {v.shape if isinstance(v, np.ndarray) else v}")
             else:
                 print(f"\033[1;31m{k}\033[0m: {v}")
@@ -108,6 +116,7 @@ class pulsar_analysis:
         """
         Simple RFI mitigation by clipping values above a threshold.
         """
+        print("Applying RFI mitigation...")
         for ch in range(self.n_channels):
             self.intensity_matrix_ch_s[ch] = remove_rfi_by_std(self.intensity_matrix_ch_s[ch],
                                chan_sigma_thresh=freq_ch_std_threshold,
@@ -136,8 +145,7 @@ class pulsar_analysis:
 
         scores = find_best_dm_Grid(matrix, center_freq_MHZ,bandwidth_MHZ, sample_rate, block_size, avg_blocks,num_peaks,pulseperiod_ms, to_plot, dm_min, dm_max, tol)
         return scores
-        # plot_dm_curve(np.array(scores)[:,0], np.array(scores)[:,1])
-
+    
     def Manual_dedisperse(self,DM, channel):
         if channel == "all":
             for i in range(self.n_channels):
@@ -166,4 +174,172 @@ class pulsar_analysis:
             dedispersed = dedisperse_pop(matrix, DM,block_size=self.block_size, avg_blocks=self.avg_blocks
                         , sample_rate=self.sample_rate , bandwidth_MHZ = self.bandwidth_MHZ ,center_freq_MHZ = self.center_freq_MHZ)
             self.dedispersed_ch_s[channel] = dedispersed
+            
+    def calculate_stokes_parameters(self):
+        """
+        Calculate Stokes parameters from the intensity matrices of two orthogonal polarization channels.
+        This requires that the data has been loaded and intensity matrices have been computed for at least two channels.
         
+        The Stokes parameters will be stored in self.stokes_parameters as follows:
+        - stokes_parameters[0]: I (total intensity)
+        - stokes_parameters[1]: Q (difference between horizontal and vertical polarization)
+        - stokes_parameters[2]: U (linear polarization along diagonals)
+        - stokes_parameters[3]: V (circular polarization)
+        """
+        if self.n_channels < 2:
+            raise ValueError("At least two orthogonal polarization channels are required to calculate Stokes parameters")
+        
+        if self.intensity_matrix_ch_s[0] is None or self.intensity_matrix_ch_s[1] is None:
+            raise ValueError("Intensity matrices have not been computed. Please call compute_intensity_matrix() first")
+        
+        # Get the intensity matrices for the first two channels
+        ch0_intensity = self.intensity_matrix_ch_s[0]
+        ch1_intensity = self.intensity_matrix_ch_s[1]
+        
+        # Calculate Stokes parameters
+        I, Q, U, V = calculate_stokes_parameters(ch0_intensity, ch1_intensity)
+        
+        # Store the results
+        self.stokes_parameters[0] = I  # Total intensity
+        self.stokes_parameters[1] = Q  # Linear polarization (horizontal vs vertical)
+        self.stokes_parameters[2] = U  # Linear polarization (diagonal)
+        self.stokes_parameters[3] = V  # Circular polarization
+        
+        # Calculate and store derived polarization parameters
+        self.L, self.P_frac, self.PA = calculate_polarization_parameters(I, Q, U, V)
+        
+        print("Stokes parameters calculated successfully")
+    
+    def plot_stokes_parameters(self, figsize=(14, 10)):
+        """
+        Plot Stokes parameters and polarization parameters.
+        
+        Parameters
+        ----------
+        figsize : tuple
+            Figure size (width, height) in inches
+        """
+        if self.stokes_parameters[0] is None:
+            raise ValueError("Stokes parameters have not been calculated. Please call calculate_stokes_parameters() first")
+        
+        I = self.stokes_parameters[0]  # Total intensity
+        Q = self.stokes_parameters[1]  # Linear polarization (horizontal vs vertical)
+        U = self.stokes_parameters[2]  # Linear polarization (diagonal)
+        V = self.stokes_parameters[3]  # Circular polarization
+        
+        # Create subplots
+        fig, axes = plt.subplots(3, 2, figsize=figsize)
+        fig.suptitle('Stokes Parameters', fontsize=16)
+        
+        # Plot Stokes I
+        im0 = axes[0, 0].imshow(I, aspect='auto', origin='lower', 
+                               interpolation='nearest', cmap='viridis')
+        axes[0, 0].set_title('Stokes I (Total Intensity)')
+        axes[0, 0].set_xlabel('Frequency Channel')
+        axes[0, 0].set_ylabel('Time')
+        plt.colorbar(im0, ax=axes[0, 0])
+        
+        # Plot Stokes Q
+        im1 = axes[0, 1].imshow(Q, aspect='auto', origin='lower', 
+                               interpolation='nearest', cmap='RdBu_r')
+        axes[0, 1].set_title('Stokes Q (Linear Polarization H-V)')
+        axes[0, 1].set_xlabel('Frequency Channel')
+        axes[0, 1].set_ylabel('Time')
+        plt.colorbar(im1, ax=axes[0, 1])
+        
+        # Plot Stokes U
+        im2 = axes[1, 0].imshow(U, aspect='auto', origin='lower', 
+                               interpolation='nearest', cmap='RdBu_r')
+        axes[1, 0].set_title('Stokes U (Linear Polarization Diagonal)')
+        axes[1, 0].set_xlabel('Frequency Channel')
+        axes[1, 0].set_ylabel('Time')
+        plt.colorbar(im2, ax=axes[1, 0])
+        
+        # Plot Stokes V
+        im3 = axes[1, 1].imshow(V, aspect='auto', origin='lower', 
+                               interpolation='nearest', cmap='RdBu_r')
+        axes[1, 1].set_title('Stokes V (Circular Polarization)')
+        axes[1, 1].set_xlabel('Frequency Channel')
+        axes[1, 1].set_ylabel('Time')
+        plt.colorbar(im3, ax=axes[1, 1])
+        
+        # Plot Linear Polarization
+        im4 = axes[2, 0].imshow(self.L, aspect='auto', origin='lower', 
+                               interpolation='nearest', cmap='viridis')
+        axes[2, 0].set_title('Linear Polarization |L| = √(Q² + U²)')
+        axes[2, 0].set_xlabel('Frequency Channel')
+        axes[2, 0].set_ylabel('Time')
+        plt.colorbar(im4, ax=axes[2, 0])
+        
+        # Plot Polarization Angle
+        im5 = axes[2, 1].imshow(self.PA, aspect='auto', origin='lower', 
+                               interpolation='nearest', cmap='twilight_shifted', 
+                               vmin=-90, vmax=90)
+        axes[2, 1].set_title('Polarization Angle (degrees)')
+        axes[2, 1].set_xlabel('Frequency Channel')
+        axes[2, 1].set_ylabel('Time')
+        plt.colorbar(im5, ax=axes[2, 1])
+        
+        plt.tight_layout()
+        plt.subplots_adjust(top=0.92)
+        plt.show()
+        
+    def plot_integrated_stokes(self, figsize=(12, 10)):
+        """
+        Plot time and frequency integrated Stokes parameters.
+        
+        Parameters
+        ----------
+        figsize : tuple
+            Figure size (width, height) in inches
+        """
+        if self.stokes_parameters[0] is None:
+            raise ValueError("Stokes parameters have not been calculated. Please call calculate_stokes_parameters() first")
+        
+        I = self.stokes_parameters[0]
+        Q = self.stokes_parameters[1]
+        U = self.stokes_parameters[2]
+        V = self.stokes_parameters[3]
+        
+        # Time integration (sum over rows)
+        I_time = np.sum(I, axis=0)
+        Q_time = np.sum(Q, axis=0)
+        U_time = np.sum(U, axis=0)
+        V_time = np.sum(V, axis=0)
+        
+        # Frequency integration (sum over columns)
+        I_freq = np.sum(I, axis=1)
+        Q_freq = np.sum(Q, axis=1)
+        U_freq = np.sum(U, axis=1)
+        V_freq = np.sum(V, axis=1)
+        
+        # Create figure with two rows of subplots
+        fig, axes = plt.subplots(2, 1, figsize=figsize)
+        fig.suptitle('Integrated Stokes Parameters', fontsize=16)
+        
+        # Time-integrated plots (showing variation with frequency)
+        axes[0].plot(I_time, label='I', color='black', linewidth=2)
+        axes[0].plot(Q_time, label='Q', color='red', linewidth=1)
+        axes[0].plot(U_time, label='U', color='green', linewidth=1)
+        axes[0].plot(V_time, label='V', color='blue', linewidth=1)
+        axes[0].set_title('Time-Integrated Stokes Parameters')
+        axes[0].set_xlabel('Frequency Channel')
+        axes[0].set_ylabel('Integrated Intensity')
+        axes[0].legend()
+        axes[0].grid(True, alpha=0.3)
+        
+        # Frequency-integrated plots (showing variation with time)
+        axes[1].plot(I_freq, label='I', color='black', linewidth=2)
+        axes[1].plot(Q_freq, label='Q', color='red', linewidth=1)
+        axes[1].plot(U_freq, label='U', color='green', linewidth=1)
+        axes[1].plot(V_freq, label='V', color='blue', linewidth=1)
+        axes[1].set_title('Frequency-Integrated Stokes Parameters')
+        axes[1].set_xlabel('Time Bin')
+        axes[1].set_ylabel('Integrated Intensity')
+        axes[1].legend()
+        axes[1].grid(True, alpha=0.3)
+        
+        plt.tight_layout()
+        plt.subplots_adjust(top=0.92)
+        plt.show()
+

@@ -25,10 +25,13 @@ class IntensityMatrixPage(QWidget):
 
         # RFI Mitigation controls
         rfi_layout = QHBoxLayout()
-        self.freq_thresh_input = QDoubleSpinBox(); self.freq_thresh_input.setDecimals(1); self.freq_thresh_input.setValue(3.0)
+        self.freq_std_thresh_input = QDoubleSpinBox(); self.freq_std_thresh_input.setDecimals(1); self.freq_std_thresh_input.setValue(3.0)
+        self.freq_mean_thresh_input = QDoubleSpinBox(); self.freq_mean_thresh_input.setDecimals(1); self.freq_mean_thresh_input.setValue(1.0)
+
         self.time_thresh_input = QDoubleSpinBox(); self.time_thresh_input.setDecimals(1); self.time_thresh_input.setValue(5.0)
         self.fill_value_input = QDoubleSpinBox(); self.fill_value_input.setDecimals(1); self.fill_value_input.setValue(0.0)
-        rfi_layout.addWidget(QLabel("Freq σ thresh:")); rfi_layout.addWidget(self.freq_thresh_input)
+        rfi_layout.addWidget(QLabel("Freq σ thresh:")); rfi_layout.addWidget(self.freq_std_thresh_input)
+        rfi_layout.addWidget(QLabel("Freq μ thresh:")); rfi_layout.addWidget(self.freq_mean_thresh_input)
         rfi_layout.addWidget(QLabel("Time σ thresh:")); rfi_layout.addWidget(self.time_thresh_input)
         rfi_layout.addWidget(QLabel("Fill value:"));   rfi_layout.addWidget(self.fill_value_input)
         layout.addLayout(rfi_layout)
@@ -81,11 +84,13 @@ class IntensityMatrixPage(QWidget):
         run_with_feedback(self.rfi_btn, load=True)
         self.pulsar = self.main_window.pulsar
         if self.pulsar:
-            fth = self.freq_thresh_input.value()
+            fsth = self.freq_std_thresh_input.value()
+            fmth = self.freq_mean_thresh_input.value()
             tth = self.time_thresh_input.value()
             fv  = self.fill_value_input.value()
             # assumes pulsar has RFI_mitigation method
-            self.pulsar.RFI_mitigation(freq_ch_threshold=fth,
+            self.pulsar.RFI_mitigation(freq_ch_std_threshold=fsth,
+                                       freq_ch_mean_threshold=fmth,
                                        time_ch_threshold=tth,
                                        fill_value=fv)
         run_with_feedback(self.rfi_btn, load=False)
